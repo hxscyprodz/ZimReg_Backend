@@ -1,6 +1,6 @@
 import logger from "../services/LoggerService";
 
-const mandatoryEnvironmentVariables = ["PORT", "NODE_ENV"];
+const mandatoryEnvironmentVariables = ["PORT", "NODE_ENV", "POSTGRESQL_URL"];
 
 const missingEnvironmentVariables = mandatoryEnvironmentVariables.filter(
   (variable) => !process.env[variable],
@@ -20,4 +20,8 @@ if (missingEnvironmentVariables.length > 0) {
 export const config = {
   PORT: Number(process.env.PORT) || 3000,
   NODE_ENV: process.env.NODE_ENV as string,
+  POSTGRESQL_URL: process.env.POSTGRESQL_URL as string,
+  CONNECTION_TIMEOUT: Number(process.env.CONNECTION_TIMEOUT) || 10_000,
+  IDLE_TIMEOUT: Number(process.env.IDLE_TIMEOUT) || 50_000,
+  MAX: Number(process.env.MAX) || 10,
 };
