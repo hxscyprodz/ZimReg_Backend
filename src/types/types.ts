@@ -1,3 +1,6 @@
+import { z } from "zod";
+import { UpdateProvinceSchema } from "../validators/validators";
+
 export enum StatusCodes {
   OK = 200,
   CREATED = 201,
@@ -7,3 +10,10 @@ export enum StatusCodes {
   NOT_FOUND = 404,
   INTERNAL_SERVER_ERROR = 500,
 }
+
+export enum EResourceStatus {
+  AVAILABLE = "AVAILABLE",
+  DELETED = "DELETED",
+}
+
+export type TUpdateProvincePayload = z.infer<typeof UpdateProvinceSchema>;
