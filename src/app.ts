@@ -3,12 +3,15 @@ import morgan from "morgan";
 import ErrorHandlingMiddleware from "./middlewares/ErrorHandling";
 import RouteNotFoundMiddleware from "./middlewares/ResourceNotFound";
 import { config } from "./config/envConfig";
+import ProvincesRoutes from "./routes/ProvincesRoutes";
 
 export const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(config.NODE_ENV === "production" ? "combined" : "dev"));
+
+app.use("/api/v1/provinces", ProvincesRoutes);
 
 app.use(RouteNotFoundMiddleware);
 app.use(ErrorHandlingMiddleware);
