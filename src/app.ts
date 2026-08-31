@@ -5,6 +5,7 @@ import RouteNotFoundMiddleware from "./middlewares/ResourceNotFound";
 import { config } from "./config/envConfig";
 import ProvincesRoutes from "./routes/ProvincesRoutes";
 import DistrictsRoutes from "./routes/DistrictsRoutes";
+import StationsRoutes from "./routes/StationsRoutes";
 
 export const app = express();
 
@@ -14,6 +15,7 @@ app.use(morgan(config.NODE_ENV === "production" ? "combined" : "dev"));
 
 app.use("/api/v1/provinces", ProvincesRoutes);
 app.use("/api/v1/districts", DistrictsRoutes);
+app.use("/api/v1/stations", StationsRoutes);
 
 app.use(RouteNotFoundMiddleware);
 app.use(ErrorHandlingMiddleware);
