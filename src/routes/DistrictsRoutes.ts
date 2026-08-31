@@ -1,5 +1,5 @@
 import { Router } from "express";
-import DistrictsControllers from "../controllers/Districts.controllers";
+import DistrictsControllers from "../controllers/DistrictsControllers";
 
 const router = Router();
 
