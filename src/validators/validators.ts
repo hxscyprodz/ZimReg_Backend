@@ -6,16 +6,16 @@ export const UUIDSchema = z.object({
 });
 
 export const CreateProvinceSchema = z.object({
-  name: z.string(),
+  name: z.string().min(2).max(255),
 });
 
 export const UpdateProvinceSchema = z.object({
-  name: z.string().optional(),
+  name: z.string().min(2).max(255).optional(),
   status: z.nativeEnum(EResourceStatus).optional(),
 });
 
 export const CreateDistrictSchema = z.object({
-  name: z.string(),
+  name: z.string().min(2).max(255),
   province: uuid(),
 });
 
