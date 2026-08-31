@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "build": "bun build ./src/server.ts --outdir ./dist --target bun --minify",
-    "start:prod": "bun ./dist/index.js",
+    "start:prod": "bun ./dist/server.js",
     "start:dev": "bun --watch ./src/server.ts",
     "db:push": "drizzle-kit push"
   },
