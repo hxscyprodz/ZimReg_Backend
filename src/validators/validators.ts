@@ -19,4 +19,12 @@ export const CreateDistrictSchema = z.object({
   province: uuid(),
 });
 
+export const CreateStationSchema = z.object({
+  name: z.string().min(5),
+  address: z.string().min(10),
+  city: z.string().min(2),
+  district: z.uuid(),
+});
+
 export const UpdateDistrictSchema = CreateDistrictSchema.partial();
+export const UpdateStationSchema = CreateStationSchema.partial();
