@@ -13,3 +13,10 @@ export const UpdateProvinceSchema = z.object({
   name: z.string().optional(),
   status: z.nativeEnum(EResourceStatus).optional(),
 });
+
+export const CreateDistrictSchema = z.object({
+  name: z.string(),
+  province: uuid(),
+});
+
+export const UpdateDistrictSchema = CreateDistrictSchema.partial();

@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { UpdateProvinceSchema } from "../validators/validators";
+import {
+  UpdateProvinceSchema,
+  CreateDistrictSchema,
+} from "../validators/validators";
 
 export enum StatusCodes {
   OK = 200,
@@ -17,3 +20,4 @@ export enum EResourceStatus {
 }
 
 export type TUpdateProvincePayload = z.infer<typeof UpdateProvinceSchema>;
+export type TCreateDistrictPayload = z.infer<typeof CreateDistrictSchema>;
