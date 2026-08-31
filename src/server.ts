@@ -13,6 +13,7 @@ const startServer = async () => {
     });
   } catch (error: any) {
     logger.error(`An error occurred while starting server: ${error?.message}`);
+    process.exit();
   }
 };
 
