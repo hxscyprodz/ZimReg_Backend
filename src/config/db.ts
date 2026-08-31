@@ -25,6 +25,7 @@ class Postgres {
       logger.error(
         `[ ${FLAG} ] - An error occurred while connecting to database: ${error?.message}`,
       );
+      throw error;
     }
   }
 
