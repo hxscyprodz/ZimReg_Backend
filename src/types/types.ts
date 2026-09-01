@@ -4,8 +4,9 @@ import {
   CreateDistrictSchema,
   CreateStationSchema,
   UpdateStationSchema,
+  CreateHospitalSchema,
+  UpdateHospitalSchema,
 } from "../validators/validators";
-
 export enum StatusCodes {
   OK = 200,
   CREATED = 201,
@@ -25,3 +26,5 @@ export type TUpdateProvincePayload = z.infer<typeof UpdateProvinceSchema>;
 export type TCreateDistrictPayload = z.infer<typeof CreateDistrictSchema>;
 export type TCreateStationPayload = z.infer<typeof CreateStationSchema>;
 export type TUpdateStationPayload = z.infer<typeof UpdateStationSchema>;
+export type TCreateHospitalPayload = z.infer<typeof CreateHospitalSchema>;
+export type TUpdateHospitalPayload = z.infer<typeof UpdateHospitalSchema>;
