@@ -26,7 +26,7 @@ export const BirthCertificates = pgTable(
     placeOfIssue: uuid("place_of_issue")
       .notNull()
       .references(() => Stations.id, { onDelete: "cascade" }),
-    issuedBy: uuid("issued_at").notNull(),
+    issuedBy: uuid("issued_by"),
     dateOfIssue: date("date_of_issue"),
     dateOfRegistration: date("date_of_registration").notNull().defaultNow(),
     ...timestamps,
