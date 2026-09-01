@@ -26,5 +26,12 @@ export const CreateStationSchema = z.object({
   district: z.uuid(),
 });
 
+export const CreateHospitalSchema = z.object({
+  name: z.string().min(2).max(200),
+  city: z.string().min(2).max(100),
+  district: uuid(),
+});
+
+export const UpdateHospitalSchema = CreateHospitalSchema.partial();
 export const UpdateDistrictSchema = CreateDistrictSchema.partial();
 export const UpdateStationSchema = CreateStationSchema.partial();
