@@ -2,12 +2,14 @@ import { app } from "./app";
 import Postgres from "./config/db";
 import { config } from "./config/envConfig";
 import logger from "./services/LoggerService";
+import { RedisService } from "./services/Redis";
 
 const port = config.PORT;
 
 const startServer = async () => {
   try {
     await Postgres.connectDB();
+    await RedisService.getInstance().connect();
     app.listen(port, () => {
       logger.info(`Server running on port ${port}...`);
     });
