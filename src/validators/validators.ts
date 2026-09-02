@@ -42,6 +42,11 @@ export const RegisterUserSchema = z.object({
   email: z.email(),
 });
 
+export const LoginUserSchema = z.object({
+  email: z.email(),
+  password: z.string().min(8).max(12),
+});
+
 export const UpdateHospitalSchema = CreateHospitalSchema.partial();
 export const UpdateDistrictSchema = CreateDistrictSchema.partial();
 export const UpdateStationSchema = CreateStationSchema.partial();

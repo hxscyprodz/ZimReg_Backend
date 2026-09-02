@@ -7,6 +7,7 @@ import {
   CreateHospitalSchema,
   UpdateHospitalSchema,
   RegisterUserSchema,
+  LoginUserSchema,
 } from "../validators/validators";
 export enum StatusCodes {
   OK = 200,
@@ -30,3 +31,4 @@ export type TUpdateStationPayload = z.infer<typeof UpdateStationSchema>;
 export type TCreateHospitalPayload = z.infer<typeof CreateHospitalSchema>;
 export type TUpdateHospitalPayload = z.infer<typeof UpdateHospitalSchema>;
 export type TRegisterUserPayload = z.infer<typeof RegisterUserSchema>;
+export type TLoginUserPayload = z.infer<typeof LoginUserSchema>;
