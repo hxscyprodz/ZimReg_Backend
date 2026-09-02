@@ -30,6 +30,13 @@ export class UnauthorizedError extends CustomError {
   }
 }
 
+export class ForbiddenError extends CustomError {
+  override name = "ForbiddenError";
+  constructor(message: string) {
+    super(message, StatusCodes.FORBIDDEN);
+  }
+}
+
 export class RouteNotFoundError extends CustomError {
   override name = "RouteNotFoundError";
   constructor(message: string) {

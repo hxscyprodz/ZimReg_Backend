@@ -1,6 +1,11 @@
 import logger from "../services/LoggerService";
 
-const mandatoryEnvironmentVariables = ["PORT", "NODE_ENV", "POSTGRESQL_URL"];
+const mandatoryEnvironmentVariables = [
+  "PORT",
+  "NODE_ENV",
+  "POSTGRESQL_URL",
+  "ORIGINS",
+];
 
 const missingEnvironmentVariables = mandatoryEnvironmentVariables.filter(
   (variable) => !process.env[variable],
@@ -28,4 +33,5 @@ export const config = {
   REDIS_HOST_PORT: Number(process.env.REDIS_HOST_PORT) || 6379,
   REDIS_CONNECT_TIMEOUT: Number(process.env.REDIS_CONNECT_TIMEOUT) || 10_000,
   IS_LOCAL_ENVIRONMENT: process.env.IS_LOCAL_ENVIRONMENT === "true",
+  ORIGINS: process.env.ORIGINS as string,
 };
