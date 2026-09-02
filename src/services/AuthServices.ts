@@ -4,6 +4,7 @@ import { BirthCertificates, Users } from "../db/schemas";
 import { TRegisterUserPayload } from "../types/types";
 import { getUserId } from "../utils/GenerateID";
 import { BadRequestError, NotFoundError } from "../errors/errors";
+import Hashing from "../utils/Hashing";
 import logger from "./LoggerService";
 
 class AuthServices {
@@ -63,7 +64,7 @@ class AuthServices {
 
     const userId = await getUserId("user:sequence");
 
-    //TODO: Hash password
+    const hashedPassword = await Hashing.hashPassword(password);
 
     const [newUser] = await db
       .insert(Users)
@@ -72,7 +73,7 @@ class AuthServices {
         nationalIdNumber,
         phoneNumber,
         email,
-        password,
+        password: hashedPassword,
       })
       .returning({
         id: Users.id,
