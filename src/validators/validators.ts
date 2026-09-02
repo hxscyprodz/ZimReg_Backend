@@ -32,6 +32,21 @@ export const CreateHospitalSchema = z.object({
   district: uuid(),
 });
 
+export const RegisterUserSchema = z
+  .object({
+    firstName: z.string().min(2).max(100),
+    surname: z.string().min(2).max(100),
+    nationalIdNumber: z.string().length(14),
+    phoneNumber: z.e164(),
+    password: z.string().min(8).max(12),
+    confirmPassword: z.string().min(8).max(12),
+    email: z.email(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
 export const UpdateHospitalSchema = CreateHospitalSchema.partial();
 export const UpdateDistrictSchema = CreateDistrictSchema.partial();
 export const UpdateStationSchema = CreateStationSchema.partial();
