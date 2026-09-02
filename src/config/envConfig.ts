@@ -5,6 +5,8 @@ const mandatoryEnvironmentVariables = [
   "NODE_ENV",
   "POSTGRESQL_URL",
   "ORIGINS",
+  "ACCESS_TOKEN_SECRET",
+  "REFRESH_TOKEN_SECRET",
 ];
 
 const missingEnvironmentVariables = mandatoryEnvironmentVariables.filter(
@@ -34,4 +36,6 @@ export const config = {
   REDIS_CONNECT_TIMEOUT: Number(process.env.REDIS_CONNECT_TIMEOUT) || 10_000,
   IS_LOCAL_ENVIRONMENT: process.env.IS_LOCAL_ENVIRONMENT === "true",
   ORIGINS: process.env.ORIGINS as string,
+  ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET as string,
+  REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET as string,
 };
