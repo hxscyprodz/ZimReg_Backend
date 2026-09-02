@@ -6,6 +6,7 @@ import { getUserId } from "../utils/GenerateID";
 import { BadRequestError, NotFoundError } from "../errors/errors";
 import Hashing from "../utils/Hashing";
 import logger from "./LoggerService";
+import Tokens from "./Tokens";
 
 class AuthServices {
   static async registerUser(payload: TRegisterUserPayload) {
@@ -79,6 +80,7 @@ class AuthServices {
         id: Users.id,
         userId: Users.userId,
         nationalIdNumber: Users.nationalIdNumber,
+        email: Users.email,
         phoneNumber: Users.phoneNumber,
         role: Users.role,
         status: Users.status,
@@ -89,10 +91,21 @@ class AuthServices {
       `[ USER REGISTRATION ] - User ID: ${newUser && newUser.id} was registered successfully`,
     );
 
-    //TODO: Generate Access and Refresh tokens
+    if (!newUser) {
+      throw new BadRequestError("Invalid registration details");
+    }
+
+    const { accessToken, refreshToken } = await Tokens.generateTokens({
+      id: newUser.id,
+      userId: newUser.userId,
+      role: newUser.role,
+      email: newUser.email,
+    });
 
     return {
       user: newUser,
+      accessToken,
+      refreshToken,
     };
   }
 
@@ -121,11 +134,15 @@ class AuthServices {
       throw new BadRequestError("Bad credentials");
     }
 
-    //TODO: Generate access and refresh tokens
-
     const { hashedPassword, ...safeUser } = user;
+
+    const { accessToken, refreshToken } = await Tokens.generateTokens(safeUser);
+    console.log({ accessToken, refreshToken });
+
     return {
       user: safeUser,
+      accessToken,
+      refreshToken,
     };
   }
 }
