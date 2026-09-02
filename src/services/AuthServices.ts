@@ -1,7 +1,7 @@
 import { or, eq } from "drizzle-orm";
 import { db } from "../config/db";
 import { BirthCertificates, Users } from "../db/schemas";
-import { TRegisterUserPayload } from "../types/types";
+import { TLoginUserPayload, TRegisterUserPayload } from "../types/types";
 import { getUserId } from "../utils/GenerateID";
 import { BadRequestError, NotFoundError } from "../errors/errors";
 import Hashing from "../utils/Hashing";
@@ -93,6 +93,39 @@ class AuthServices {
 
     return {
       user: newUser,
+    };
+  }
+
+  static async loginUser(payload: TLoginUserPayload) {
+    const [user] = await db
+      .select({
+        id: Users.id,
+        userId: Users.userId,
+        email: Users.email,
+        hashedPassword: Users.password,
+        role: Users.role,
+      })
+      .from(Users)
+      .where(eq(Users.email, payload.email))
+      .limit(1);
+
+    if (!user) {
+      throw new BadRequestError("Bad credentials");
+    }
+
+    const isValidPassword = await Hashing.verifyPassword(
+      payload.password,
+      user.hashedPassword,
+    );
+    if (!isValidPassword) {
+      throw new BadRequestError("Bad credentials");
+    }
+
+    //TODO: Generate access and refresh tokens
+
+    const { hashedPassword, ...safeUser } = user;
+    return {
+      user: safeUser,
     };
   }
 }

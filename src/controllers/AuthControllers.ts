@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import AuthServices from "../services/AuthServices";
-import { RegisterUserSchema } from "../validators/validators";
+import { LoginUserSchema, RegisterUserSchema } from "../validators/validators";
 import { BadRequestError } from "../errors/errors";
 import { StatusCodes } from "../types/types";
 import logger from "../services/LoggerService";
@@ -24,6 +24,27 @@ class AuthControllers {
     } catch (error) {
       logger.error(
         `[ ${FLAG} ] - An error occurred while registering user: ${error}`,
+      );
+      next(error);
+    }
+  }
+
+  static async loginUser(req: Request, res: Response, next: NextFunction) {
+    try {
+      const isValidRequestBody = LoginUserSchema.safeParse(req.body);
+      if (!isValidRequestBody.success) {
+        throw new BadRequestError("Invalid credentials");
+      }
+
+      const { user } = await AuthServices.loginUser(isValidRequestBody.data);
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "User logged in successfully",
+        user,
+      });
+    } catch (error) {
+      logger.error(
+        `[ ${FLAG}] - An error occurred while logging in user: ${error}`,
       );
       next(error);
     }
