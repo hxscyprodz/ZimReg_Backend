@@ -171,7 +171,6 @@ class StationsServices {
   }
 
   static async deleteStation(id: string) {
-    console.log(id);
     const [station] = await db
       .select()
       .from(Stations)

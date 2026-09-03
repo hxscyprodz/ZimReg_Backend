@@ -2,6 +2,7 @@ import express from "express";
 import morgan from "morgan";
 import cors, { CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
+import Authenticate from "./middlewares/Auth";
 import ErrorHandlingMiddleware from "./middlewares/ErrorHandling";
 import RouteNotFoundMiddleware from "./middlewares/ResourceNotFound";
 import { config } from "./config/envConfig";
@@ -41,10 +42,10 @@ app.use(cors(corsOptions));
 app.use(cookieParser());
 
 app.use("/api/v1/auth", AuthRoutes);
-app.use("/api/v1/provinces", ProvincesRoutes);
-app.use("/api/v1/districts", DistrictsRoutes);
-app.use("/api/v1/stations", StationsRoutes);
-app.use("/api/v1/hospitals", HospitalRoutes);
+app.use("/api/v1/provinces", Authenticate, ProvincesRoutes);
+app.use("/api/v1/districts", Authenticate, DistrictsRoutes);
+app.use("/api/v1/stations", Authenticate, StationsRoutes);
+app.use("/api/v1/hospitals", Authenticate, HospitalRoutes);
 
 app.use(RouteNotFoundMiddleware);
 app.use(ErrorHandlingMiddleware);

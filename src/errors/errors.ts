@@ -43,3 +43,10 @@ export class RouteNotFoundError extends CustomError {
     super(message, StatusCodes.NOT_FOUND);
   }
 }
+
+export class TokenExpiredError extends CustomError {
+  override name = "TokenExpiredError";
+  constructor(message: string) {
+    super(message, StatusCodes.UNAUTHORIZED);
+  }
+}

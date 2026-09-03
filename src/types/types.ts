@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Request } from "express";
 import {
   UpdateProvinceSchema,
   CreateDistrictSchema,
@@ -22,6 +23,10 @@ export enum StatusCodes {
 export enum EResourceStatus {
   AVAILABLE = "AVAILABLE",
   DELETED = "DELETED",
+}
+
+export interface RequestWithUser extends Request {
+  user?: any;
 }
 
 export type TUpdateProvincePayload = z.infer<typeof UpdateProvinceSchema>;

@@ -137,7 +137,6 @@ class AuthServices {
     const { hashedPassword, ...safeUser } = user;
 
     const { accessToken, refreshToken } = await Tokens.generateTokens(safeUser);
-    console.log({ accessToken, refreshToken });
 
     return {
       user: safeUser,
