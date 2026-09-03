@@ -5,6 +5,8 @@ const mandatoryEnvironmentVariables = [
   "NODE_ENV",
   "POSTGRESQL_URL",
   "ORIGINS",
+  "REDIS_HOST",
+  "REDIS_HOST_PORT",
   "ACCESS_TOKEN_SECRET",
   "REFRESH_TOKEN_SECRET",
 ];
@@ -38,4 +40,6 @@ export const config = {
   ORIGINS: process.env.ORIGINS as string,
   ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET as string,
   REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET as string,
+  REFRESH_TOKEN_TTL: Number(process.env.REFRESH_TOKEN_TTL) || 900000,
+  ACCESS_TOKEN_TTL: Number(process.env.ACCESS_TOKEN_TTL) || 604800000,
 };
