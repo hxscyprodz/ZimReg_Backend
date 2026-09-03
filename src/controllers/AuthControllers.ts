@@ -4,6 +4,7 @@ import { LoginUserSchema, RegisterUserSchema } from "../validators/validators";
 import { BadRequestError } from "../errors/errors";
 import { StatusCodes } from "../types/types";
 import logger from "../services/LoggerService";
+import Cookies from "../utils/Cookies";
 
 const FLAG = "AUTH";
 
@@ -15,7 +16,11 @@ class AuthControllers {
         throw new BadRequestError("Invalid user registration details");
       }
 
-      const { user } = await AuthServices.registerUser(isValidRequestBody.data);
+      const { user, accessToken, refreshToken } =
+        await AuthServices.registerUser(isValidRequestBody.data);
+
+      Cookies.setCookies(res, accessToken, refreshToken);
+
       return res.status(StatusCodes.CREATED).json({
         success: true,
         message: "User created successfully",
@@ -36,7 +41,12 @@ class AuthControllers {
         throw new BadRequestError("Invalid credentials");
       }
 
-      const { user } = await AuthServices.loginUser(isValidRequestBody.data);
+      const { user, accessToken, refreshToken } = await AuthServices.loginUser(
+        isValidRequestBody.data,
+      );
+
+      Cookies.setCookies(res, accessToken, refreshToken);
+
       return res.status(StatusCodes.OK).json({
         success: true,
         message: "User logged in successfully",

@@ -1,6 +1,7 @@
 import express from "express";
 import morgan from "morgan";
 import cors, { CorsOptions } from "cors";
+import cookieParser from "cookie-parser";
 import ErrorHandlingMiddleware from "./middlewares/ErrorHandling";
 import RouteNotFoundMiddleware from "./middlewares/ResourceNotFound";
 import { config } from "./config/envConfig";
@@ -37,6 +38,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(config.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(cors(corsOptions));
+app.use(cookieParser());
 
 app.use("/api/v1/auth", AuthRoutes);
 app.use("/api/v1/provinces", ProvincesRoutes);
