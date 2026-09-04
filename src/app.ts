@@ -7,6 +7,7 @@ import ErrorHandlingMiddleware from "./middlewares/ErrorHandling";
 import RouteNotFoundMiddleware from "./middlewares/ResourceNotFound";
 import { config } from "./config/envConfig";
 import AuthRoutes from "./routes/AuthRoutes";
+import ProfileRoutes from "./routes/ProfileRoutes";
 import ProvincesRoutes from "./routes/ProvincesRoutes";
 import DistrictsRoutes from "./routes/DistrictsRoutes";
 import StationsRoutes from "./routes/StationsRoutes";
@@ -42,6 +43,7 @@ app.use(cors(corsOptions));
 app.use(cookieParser());
 
 app.use("/api/v1/auth", AuthRoutes);
+app.use("/api/v1/profile", ProfileRoutes);
 app.use("/api/v1/provinces", Authenticate, ProvincesRoutes);
 app.use("/api/v1/districts", Authenticate, DistrictsRoutes);
 app.use("/api/v1/stations", Authenticate, StationsRoutes);

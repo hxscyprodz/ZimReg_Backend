@@ -9,7 +9,10 @@ import {
   UpdateHospitalSchema,
   RegisterUserSchema,
   LoginUserSchema,
+  UpdateProfileSchema,
 } from "../validators/validators";
+import { applicationStatus } from "../db/Columns.Helper";
+
 export enum StatusCodes {
   OK = 200,
   CREATED = 201,
@@ -29,6 +32,15 @@ export interface RequestWithUser extends Request {
   user?: any;
 }
 
+export interface IUserDashboardApplication {
+  id: string;
+  trackingId: string;
+  status: (typeof applicationStatus.enumValues)[number];
+  isPrinted: boolean;
+  createdAt: Date;
+}
+
+export type TUpdateProfilePayload = z.infer<typeof UpdateProfileSchema>;
 export type TUpdateProvincePayload = z.infer<typeof UpdateProvinceSchema>;
 export type TCreateDistrictPayload = z.infer<typeof CreateDistrictSchema>;
 export type TCreateStationPayload = z.infer<typeof CreateStationSchema>;
