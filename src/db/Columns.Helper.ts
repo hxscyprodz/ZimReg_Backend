@@ -19,7 +19,7 @@ export const staffStatus = pgEnum("staff_status", [
 export const applicationStatus = pgEnum("applications_status", [
   "PENDING_REVIEW",
   "APPROVED",
-  "DELETED",
+  "REJECTED",
   "COLLECTED",
 ]);
 export const roles = pgEnum("roles", [
@@ -28,6 +28,7 @@ export const roles = pgEnum("roles", [
   "REGISTRAR_OFFICER",
   "CITIZEN",
 ]);
+export const applicationType = pgEnum("application_type", ["BIRTH", "ID"]);
 
 export const timestamps = {
   createdAt: timestamp("created_at").defaultNow().notNull(),
