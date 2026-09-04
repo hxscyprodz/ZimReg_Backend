@@ -7,6 +7,7 @@ import ErrorHandlingMiddleware from "./middlewares/ErrorHandling";
 import RouteNotFoundMiddleware from "./middlewares/ResourceNotFound";
 import { config } from "./config/envConfig";
 import AuthRoutes from "./routes/AuthRoutes";
+import ApplicationRoutes from "./routes/ApplicationsRoutes";
 import ProfileRoutes from "./routes/ProfileRoutes";
 import ProvincesRoutes from "./routes/ProvincesRoutes";
 import DistrictsRoutes from "./routes/DistrictsRoutes";
@@ -44,6 +45,7 @@ app.use(cookieParser());
 
 app.use("/api/v1/auth", AuthRoutes);
 app.use("/api/v1/profile", ProfileRoutes);
+app.use("/api/v1/applications", Authenticate, ApplicationRoutes);
 app.use("/api/v1/provinces", Authenticate, ProvincesRoutes);
 app.use("/api/v1/districts", Authenticate, DistrictsRoutes);
 app.use("/api/v1/stations", Authenticate, StationsRoutes);

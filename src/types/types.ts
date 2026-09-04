@@ -10,6 +10,7 @@ import {
   RegisterUserSchema,
   LoginUserSchema,
   UpdateProfileSchema,
+  CreateIdApplication,
 } from "../validators/validators";
 import { applicationStatus } from "../db/Columns.Helper";
 
@@ -49,3 +50,4 @@ export type TCreateHospitalPayload = z.infer<typeof CreateHospitalSchema>;
 export type TUpdateHospitalPayload = z.infer<typeof UpdateHospitalSchema>;
 export type TRegisterUserPayload = z.infer<typeof RegisterUserSchema>;
 export type TLoginUserPayload = z.infer<typeof LoginUserSchema>;
+export type TCreateIdApplication = z.infer<typeof CreateIdApplication>;
