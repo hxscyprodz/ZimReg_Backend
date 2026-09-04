@@ -53,6 +53,12 @@ export const UpdateProfileSchema = z.object({
   password: z.string().min(8).max(12).optional(),
 });
 
+export const CreateIdApplication = z.object({
+  station: z.uuid(),
+  nationalIdNumber: z.string().length(14),
+  birthCertificateImageUrl: z.url(),
+});
+
 export const UpdateHospitalSchema = CreateHospitalSchema.partial();
 export const UpdateDistrictSchema = CreateDistrictSchema.partial();
 export const UpdateStationSchema = CreateStationSchema.partial();
