@@ -8,6 +8,7 @@ import {
 } from "../db/schemas";
 import { BadRequestError, NotFoundError } from "../errors/errors";
 import { TCreateIdApplication } from "../types/types";
+import CalculateAge from "../utils/CalculateAge";
 
 interface Payload extends TCreateIdApplication {
   user: string;
@@ -52,6 +53,13 @@ class ApplicationsServices {
 
     if (hasNationalId) {
       throw new BadRequestError("Citizen already has a national ID card");
+    }
+
+    const age = CalculateAge(isBirthAvailable.dateOfBirth);
+    if (age < 16) {
+      throw new BadRequestError(
+        "Should be at least 16 years old to apply for national ID card",
+      );
     }
 
     //TODO: Generate tracking number
