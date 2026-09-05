@@ -6,6 +6,34 @@ import { CreateIdApplication } from "../validators/validators";
 import { BadRequestError } from "../errors/errors";
 
 class ApplicationsControllers {
+  static async trackApplication(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const trackingId = req.params?.trackingId;
+
+      if (!trackingId) {
+        throw new BadRequestError("Invalid application ID");
+      }
+
+      const { application } = await ApplicationsServices.trackApplication(
+        trackingId.toString(),
+      );
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Application tracking successful",
+        application,
+      });
+    } catch (error) {
+      logger.error(
+        `[ APPLICATION-TRACKING] - An error occurred while tracking application`,
+      );
+      next(error);
+    }
+  }
+
   static async nationalIdApplication(
     req: RequestWithUser,
     res: Response,
