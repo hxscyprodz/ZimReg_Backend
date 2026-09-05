@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { db } from "../config/db";
 import {
   BirthCertificates,
@@ -16,6 +16,28 @@ interface Payload extends TCreateIdApplication {
 }
 
 class ApplicationsServices {
+  static async trackApplication(trackingId: string) {
+    const [application] = await db
+      .select({
+        id: Applications.id,
+        status: Applications.status,
+        isPrinted: Applications.isPrinted,
+        trackingId: Applications.trackingId,
+        createdAt: Applications.createdAt,
+      })
+      .from(Applications)
+      .where(or(eq(Applications.trackingId, trackingId)))
+      .limit(1);
+
+    if (!application) {
+      throw new NotFoundError("Application doesn't exist");
+    }
+
+    return {
+      application,
+    };
+  }
+
   static async nationalIdApplication(payload: Payload) {
     const [isApplicationAvailable] = await db
       .select()
