@@ -38,6 +38,49 @@ class ApplicationsServices {
     };
   }
 
+  static async getNationalIdApplication(applicationId: string) {
+    const [application] = await db
+      .select({
+        id: Applications.id,
+        user: Applications.user,
+        type: Applications.type,
+        trackingId: Applications.trackingId,
+        status: Applications.status,
+        station: Applications.station,
+        createdAt: Applications.createdAt,
+        details: {
+          firstName: BirthCertificates.firstName,
+          surname: BirthCertificates.surname,
+          dateOfBirth: BirthCertificates.dateOfBirth,
+          nationalIdNumber: NationalIDsApplications.nationalIdNumber,
+          birthCertificateImageUrl:
+            NationalIDsApplications.birthCertificateImageUrl,
+        },
+      })
+      .from(Applications)
+      .innerJoin(
+        NationalIDsApplications,
+        eq(NationalIDsApplications.trackingId, Applications.trackingId),
+      )
+      .innerJoin(
+        BirthCertificates,
+        eq(
+          BirthCertificates.nationalIdNumber,
+          NationalIDsApplications.nationalIdNumber,
+        ),
+      )
+      .where(eq(Applications.id, applicationId))
+      .limit(1);
+
+    if (!application) {
+      throw new NotFoundError("Application doesn't exist");
+    }
+
+    return {
+      application,
+    };
+  }
+
   static async nationalIdApplication(payload: Payload) {
     const [isApplicationAvailable] = await db
       .select()

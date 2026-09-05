@@ -2,7 +2,7 @@ import ApplicationsServices from "../services/ApplicationsServices";
 import logger from "../services/LoggerService";
 import { RequestWithUser, StatusCodes } from "../types/types";
 import { Response, NextFunction } from "express";
-import { CreateIdApplication } from "../validators/validators";
+import { CreateIdApplication, UUIDSchema } from "../validators/validators";
 import { BadRequestError } from "../errors/errors";
 
 class ApplicationsControllers {
@@ -29,6 +29,34 @@ class ApplicationsControllers {
     } catch (error) {
       logger.error(
         `[ APPLICATION-TRACKING] - An error occurred while tracking application`,
+      );
+      next(error);
+    }
+  }
+
+  static async getNationalIdApplication(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const isValidApplicationId = UUIDSchema.safeParse(req.params);
+      if (!isValidApplicationId.success) {
+        throw new BadRequestError("Invalid application ID");
+      }
+
+      const { application } =
+        await ApplicationsServices.getNationalIdApplication(
+          isValidApplicationId.data.id,
+        );
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Application retrieved successfully",
+        application,
+      });
+    } catch (error) {
+      logger.error(
+        `[ ID-APPLICATION] - An error occurred while retrieving application`,
       );
       next(error);
     }
