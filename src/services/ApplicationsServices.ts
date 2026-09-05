@@ -9,6 +9,7 @@ import {
 import { BadRequestError, NotFoundError } from "../errors/errors";
 import { TCreateIdApplication } from "../types/types";
 import CalculateAge from "../utils/CalculateAge";
+import GenerateIds from "../utils/GenerateID";
 
 interface Payload extends TCreateIdApplication {
   user: string;
@@ -62,8 +63,11 @@ class ApplicationsServices {
       );
     }
 
-    //TODO: Generate tracking number
-    const trackingId = "ID-202608100";
+    const trackingId = await GenerateIds.ApplicationID(
+      "ID",
+      "applications:sequence",
+    );
+
     const newApplicationTransaction = await db.transaction(async (tx) => {
       const [newApplication] = await tx
         .insert(Applications)
