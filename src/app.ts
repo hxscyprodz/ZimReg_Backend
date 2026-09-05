@@ -44,7 +44,7 @@ app.use(cors(corsOptions));
 app.use(cookieParser());
 
 app.use("/api/v1/auth", AuthRoutes);
-app.use("/api/v1/profile", ProfileRoutes);
+app.use("/api/v1/profile", Authenticate, ProfileRoutes);
 app.use("/api/v1/applications", Authenticate, ApplicationRoutes);
 app.use("/api/v1/provinces", Authenticate, ProvincesRoutes);
 app.use("/api/v1/districts", Authenticate, DistrictsRoutes);
