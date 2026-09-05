@@ -2,7 +2,7 @@ import { or, eq } from "drizzle-orm";
 import { db } from "../config/db";
 import { BirthCertificates, Users } from "../db/schemas";
 import { TLoginUserPayload, TRegisterUserPayload } from "../types/types";
-import { getUserId } from "../utils/GenerateID";
+import GenerateIds from "../utils/GenerateID";
 import { BadRequestError, NotFoundError } from "../errors/errors";
 import Hashing from "../utils/Hashing";
 import logger from "./LoggerService";
@@ -63,7 +63,7 @@ class AuthServices {
       throw new BadRequestError("User already exists");
     }
 
-    const userId = await getUserId("user:sequence");
+    const userId = await GenerateIds.UserID("user:sequence");
 
     const hashedPassword = await Hashing.hashPassword(password);
 
