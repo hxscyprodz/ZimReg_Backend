@@ -20,7 +20,7 @@ export const Applications = pgTable("applications", {
   user: uuid("user_id")
     .notNull()
     .references(() => Users.id, { onDelete: "cascade" }),
-  trackingId: varchar("tracking_id", { length: 12 }).notNull().unique(),
+  trackingId: varchar("tracking_id", { length: 14 }).notNull().unique(),
   station: uuid("station")
     .notNull()
     .references(() => Stations.id, { onDelete: "cascade" }),
