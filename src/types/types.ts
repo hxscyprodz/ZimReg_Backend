@@ -11,8 +11,9 @@ import {
   LoginUserSchema,
   UpdateProfileSchema,
   CreateIdApplication,
+  CreateBirthCertificateApplication,
 } from "../validators/validators";
-import { applicationStatus } from "../db/Columns.Helper";
+import { applicationStatus, roles } from "../db/Columns.Helper";
 
 export enum StatusCodes {
   OK = 200,
@@ -29,8 +30,20 @@ export enum EResourceStatus {
   DELETED = "DELETED",
 }
 
+export enum ESex {
+  MALE = "MALE",
+  FEMALE = "FEMALE",
+}
+
 export interface RequestWithUser extends Request {
-  user?: any;
+  user?: {
+    id: string;
+    userId: string;
+    email: string;
+    role: (typeof roles.enumValues)[number];
+    iat: number;
+    exp: number;
+  };
 }
 
 export interface IUserDashboardApplication {
@@ -51,3 +64,6 @@ export type TUpdateHospitalPayload = z.infer<typeof UpdateHospitalSchema>;
 export type TRegisterUserPayload = z.infer<typeof RegisterUserSchema>;
 export type TLoginUserPayload = z.infer<typeof LoginUserSchema>;
 export type TCreateIdApplication = z.infer<typeof CreateIdApplication>;
+export type TCreateBirthCertificateApplication = z.infer<
+  typeof CreateBirthCertificateApplication
+>;

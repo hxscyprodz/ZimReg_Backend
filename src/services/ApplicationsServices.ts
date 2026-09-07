@@ -1,13 +1,19 @@
-import { eq, or } from "drizzle-orm";
+import { eq, inArray, or, and } from "drizzle-orm";
 import { db } from "../config/db";
 import {
   BirthCertificates,
   NationalIDs,
   NationalIDsApplications,
   Applications,
+  Stations,
+  Hospitals,
+  BirthCertificateApplications,
 } from "../db/schemas";
 import { BadRequestError, NotFoundError } from "../errors/errors";
-import { TCreateIdApplication } from "../types/types";
+import {
+  TCreateBirthCertificateApplication,
+  TCreateIdApplication,
+} from "../types/types";
 import CalculateAge from "../utils/CalculateAge";
 import GenerateIds from "../utils/GenerateID";
 
@@ -174,6 +180,128 @@ class ApplicationsServices {
       application: {
         ...newApplication,
         ...newIdApplication,
+      },
+    };
+  }
+
+  static async birthCertificateApplication(
+    payload: TCreateBirthCertificateApplication,
+    userId: string,
+  ) {
+    const [isApplicationAvailable] = await db
+      .select({
+        id: BirthCertificateApplications.id,
+      })
+      .from(BirthCertificateApplications)
+      .where(
+        and(
+          eq(BirthCertificateApplications.firstName, payload.firstName),
+          eq(BirthCertificateApplications.surname, payload.surname),
+          eq(
+            BirthCertificateApplications.motherIdNumber,
+            payload.motherIdNumber,
+          ),
+        ),
+      )
+      .limit(1);
+
+    if (isApplicationAvailable) {
+      throw new BadRequestError("Application already exists");
+    }
+
+    const [station] = await db
+      .select({
+        id: Stations.id,
+      })
+      .from(Stations)
+      .where(eq(Stations.id, payload.station))
+      .limit(1);
+    if (!station) {
+      throw new NotFoundError("Station doesn't exist");
+    }
+
+    const [hospital] = await db
+      .select()
+      .from(Hospitals)
+      .where(eq(Hospitals.id, payload.hospital))
+      .limit(1);
+    if (!hospital) {
+      throw new NotFoundError("Hospital doesn't exist");
+    }
+
+    const parentIds = [payload.motherIdNumber];
+    if (payload.fatherIdNumber) {
+      parentIds.push(payload.fatherIdNumber);
+    }
+
+    const foundParents = await db
+      .select()
+      .from(BirthCertificates)
+      .where(inArray(BirthCertificates.nationalIdNumber, parentIds));
+    if (foundParents.length !== parentIds.length) {
+      throw new NotFoundError("Parents registration not found");
+    }
+
+    const trackingId = await GenerateIds.ApplicationID("BT", "birth:sequence");
+
+    const newApplicationTransaction = await db.transaction(async (tx) => {
+      const [newApplication] = await tx
+        .insert(Applications)
+        .values({
+          user: userId,
+          type: "BIRTH",
+          station: station.id,
+          trackingId,
+        })
+        .returning({
+          id: Applications.id,
+          user: Applications.user,
+          type: Applications.type,
+          trackingId: Applications.trackingId,
+          station: Applications.station,
+          status: Applications.status,
+          createdAt: Applications.createdAt,
+        });
+
+      const [birthApplication] = await tx
+        .insert(BirthCertificateApplications)
+        .values({
+          trackingId,
+          firstName: payload.firstName,
+          middleNames: payload.middleNames,
+          surname: payload.surname,
+          sex: payload.sex,
+          placeOfBirth: payload.placeOfBirth,
+          villageOfOrigin: payload.villageOfOrigin,
+          address: payload.address,
+          hospital: hospital.id,
+          motherIdNumber: payload.motherIdNumber,
+          fatherIdNumber: payload.fatherIdNumber,
+          hospitalRecordImageUrl: payload.hospitalRecordImageUrl,
+          motherIdImageUrl: payload.motherIdImageUrl,
+          fatherIdImageUrl: payload.fatherIdImageUrl,
+        })
+        .returning({
+          firstName: BirthCertificateApplications.firstName,
+          middleNames: BirthCertificateApplications.middleNames,
+          surname: BirthCertificateApplications.surname,
+          sex: BirthCertificateApplications.sex,
+          villageOfOrigin: BirthCertificateApplications.villageOfOrigin,
+          placeOfBirth: BirthCertificateApplications.placeOfBirth,
+          address: BirthCertificateApplications.address,
+        });
+
+      return {
+        newApplication,
+        birthApplication,
+      };
+    });
+
+    const { newApplication, birthApplication } = newApplicationTransaction;
+    return {
+      application: {
+        ...newApplication,
+        ...birthApplication,
       },
     };
   }
