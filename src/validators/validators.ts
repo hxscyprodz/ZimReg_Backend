@@ -1,5 +1,5 @@
 import { uuid, z } from "zod";
-import { EResourceStatus } from "../types/types";
+import { EResourceStatus, ESex } from "../types/types";
 
 export const UUIDSchema = z.object({
   id: uuid(),
@@ -57,6 +57,23 @@ export const CreateIdApplication = z.object({
   station: z.uuid(),
   nationalIdNumber: z.string().length(14),
   birthCertificateImageUrl: z.url(),
+});
+
+export const CreateBirthCertificateApplication = z.object({
+  firstName: z.string().min(2).max(100),
+  middleNames: z.string().min(2).max(100).optional(),
+  surname: z.string().min(2).max(100),
+  address: z.string().min(10).max(255),
+  sex: z.nativeEnum(ESex),
+  station: z.uuid(),
+  hospital: z.uuid(),
+  placeOfBirth: z.string().min(2).max(100),
+  villageOfOrigin: z.string().min(2).max(100),
+  motherIdNumber: z.string().length(14),
+  fatherIdNumber: z.string().length(14).optional(),
+  hospitalRecordImageUrl: z.url(),
+  motherIdImageUrl: z.url(),
+  fatherIdImageUrl: z.url().optional(),
 });
 
 export const UpdateHospitalSchema = CreateHospitalSchema.partial();
