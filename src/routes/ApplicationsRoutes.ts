@@ -6,5 +6,6 @@ const router = Router();
 router.get("/tracking/:trackingId", ApplicationsControllers.trackApplication);
 router.get("/id/:id", ApplicationsControllers.getNationalIdApplication);
 router.post("/id", ApplicationsControllers.nationalIdApplication);
+router.post("/birth", ApplicationsControllers.birthCertificateApplication);
 
 export default router;
