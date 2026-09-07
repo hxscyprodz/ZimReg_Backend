@@ -18,7 +18,7 @@ class GenerateIds {
     return `CT-${year}${month}${normalizedValue}`;
   }
 
-  static async ApplicationID(type: "BIRTH" | "ID", baseKey: string) {
+  static async ApplicationID(type: "BT" | "ID", baseKey: string) {
     const { month, year } = this.getDateComponents();
 
     const key = `${type.toLocaleLowerCase()}-${baseKey}`;
