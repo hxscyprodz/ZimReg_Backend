@@ -16,6 +16,7 @@ import {
 } from "../types/types";
 import CalculateAge from "../utils/CalculateAge";
 import GenerateIds from "../utils/GenerateID";
+import { alias } from "drizzle-orm/pg-core";
 
 interface Payload extends TCreateIdApplication {
   user: string;
@@ -181,6 +182,81 @@ class ApplicationsServices {
         ...newApplication,
         ...newIdApplication,
       },
+    };
+  }
+
+  static async getBirthCertificateApplication(applicationId: string) {
+    const FatherCertificates = alias(BirthCertificates, "father_certificates");
+    const [application] = await db
+      .select({
+        id: Applications.id,
+        type: Applications.type,
+        firstName: BirthCertificateApplications.firstName,
+        middleNames: BirthCertificateApplications.middleNames,
+        surname: BirthCertificateApplications.surname,
+        sex: BirthCertificateApplications.sex,
+        placeOfBirth: BirthCertificateApplications.placeOfBirth,
+        villageOfOrigin: BirthCertificateApplications.villageOfOrigin,
+        address: BirthCertificateApplications.address,
+        hospital: {
+          id: Hospitals.id,
+          name: Hospitals.name,
+        },
+        mother: {
+          firstName: BirthCertificates.firstName,
+          surname: BirthCertificates.surname,
+          nationalIdNumber: BirthCertificates.nationalIdNumber,
+        },
+        father: {
+          firstName: FatherCertificates.firstName,
+          surname: FatherCertificates.surname,
+          nationalIdNumber: FatherCertificates.nationalIdNumber,
+        },
+        hospitalRecordImageUrl:
+          BirthCertificateApplications.hospitalRecordImageUrl,
+        motherIdImageUrl: BirthCertificateApplications.motherIdImageUrl,
+        fatherImageUrl: BirthCertificateApplications.fatherIdImageUrl,
+        trackingId: Applications.trackingId,
+        status: Applications.status,
+        station: {
+          id: Stations.id,
+          name: Stations.name,
+        },
+        createdAt: Applications.createdAt,
+      })
+      .from(Applications)
+      .innerJoin(Stations, eq(Stations.id, Applications.station))
+      .innerJoin(
+        BirthCertificateApplications,
+        eq(BirthCertificateApplications.trackingId, Applications.trackingId),
+      )
+      .innerJoin(
+        Hospitals,
+        eq(Hospitals.id, BirthCertificateApplications.hospital),
+      )
+      .innerJoin(
+        BirthCertificates,
+        eq(
+          BirthCertificates.nationalIdNumber,
+          BirthCertificateApplications.motherIdNumber,
+        ),
+      )
+      .leftJoin(
+        FatherCertificates,
+        eq(
+          FatherCertificates.nationalIdNumber,
+          BirthCertificateApplications.fatherIdNumber,
+        ),
+      )
+      .where(eq(Applications.id, applicationId))
+      .limit(1);
+
+    if (!application) {
+      throw new NotFoundError("Application doesn't exists");
+    }
+
+    return {
+      application,
     };
   }
 
