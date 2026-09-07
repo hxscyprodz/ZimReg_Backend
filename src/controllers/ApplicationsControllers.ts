@@ -101,6 +101,34 @@ class ApplicationsControllers {
     }
   }
 
+  static async getBirthCertificateApplication(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const isValidApplicationId = UUIDSchema.safeParse(req.params);
+      if (!isValidApplicationId.success) {
+        throw new BadRequestError("Invalid application ID");
+      }
+
+      const { application } =
+        await ApplicationsServices.getBirthCertificateApplication(
+          isValidApplicationId.data.id,
+        );
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Application retrieved successfully",
+        application,
+      });
+    } catch (error) {
+      logger.error(
+        `[BIRTH-APPLICATION] - An error occurred while retrieving application`,
+      );
+      next(error);
+    }
+  }
+
   static async birthCertificateApplication(
     req: RequestWithUser,
     res: Response,
