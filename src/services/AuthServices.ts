@@ -7,6 +7,7 @@ import { BadRequestError, NotFoundError } from "../errors/errors";
 import Hashing from "../utils/Hashing";
 import logger from "./LoggerService";
 import Tokens from "./Tokens";
+import { getUserWithPermissions } from "../utils/GetUserPermissions";
 
 class AuthServices {
   static async registerUser(payload: TRegisterUserPayload) {
@@ -110,17 +111,7 @@ class AuthServices {
   }
 
   static async loginUser(payload: TLoginUserPayload) {
-    const [user] = await db
-      .select({
-        id: Users.id,
-        userId: Users.userId,
-        email: Users.email,
-        hashedPassword: Users.password,
-        role: Users.role,
-      })
-      .from(Users)
-      .where(eq(Users.email, payload.email))
-      .limit(1);
+    const user = await getUserWithPermissions(payload.email);
 
     if (!user) {
       throw new BadRequestError("Bad credentials");
@@ -128,7 +119,7 @@ class AuthServices {
 
     const isValidPassword = await Hashing.verifyPassword(
       payload.password,
-      user.hashedPassword,
+      user.hashedPassword!,
     );
     if (!isValidPassword) {
       throw new BadRequestError("Bad credentials");
@@ -136,7 +127,9 @@ class AuthServices {
 
     const { hashedPassword, ...safeUser } = user;
 
-    const { accessToken, refreshToken } = await Tokens.generateTokens(safeUser);
+    const { accessToken, refreshToken } = await Tokens.generateTokens(
+      safeUser!,
+    );
 
     return {
       user: safeUser,
