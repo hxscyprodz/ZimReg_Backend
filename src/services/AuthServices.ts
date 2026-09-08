@@ -1,6 +1,6 @@
 import { or, eq } from "drizzle-orm";
 import { db } from "../config/db";
-import { BirthCertificates, Users } from "../db/schemas";
+import { BirthCertificates, Roles, UserRoles, Users } from "../db/schemas";
 import { TLoginUserPayload, TRegisterUserPayload } from "../types/types";
 import GenerateIds from "../utils/GenerateID";
 import { BadRequestError, NotFoundError } from "../errors/errors";
@@ -68,25 +68,47 @@ class AuthServices {
 
     const hashedPassword = await Hashing.hashPassword(password);
 
-    const [newUser] = await db
-      .insert(Users)
-      .values({
-        userId,
-        nationalIdNumber,
-        phoneNumber,
-        email,
-        password: hashedPassword,
-      })
-      .returning({
-        id: Users.id,
-        userId: Users.userId,
-        nationalIdNumber: Users.nationalIdNumber,
-        email: Users.email,
-        phoneNumber: Users.phoneNumber,
-        role: Users.role,
-        status: Users.status,
-        createdAt: Users.createdAt,
-      });
+    const newUserTransaction = await db.transaction(async (tx) => {
+      const [newUser] = await tx
+        .insert(Users)
+        .values({
+          userId,
+          nationalIdNumber,
+          phoneNumber,
+          email,
+          password: hashedPassword,
+        })
+        .returning({
+          id: Users.id,
+          userId: Users.userId,
+          nationalIdNumber: Users.nationalIdNumber,
+          email: Users.email,
+          phoneNumber: Users.phoneNumber,
+          status: Users.status,
+          createdAt: Users.createdAt,
+        });
+
+      if (!newUser) {
+        throw new BadRequestError("Invalid user details");
+      }
+
+      const [role] = await tx
+        .select()
+        .from(Roles)
+        .where(eq(Roles.name, "citizen"))
+        .limit(1);
+      if (!role) {
+        throw new NotFoundError("Role citizen doesn't exits");
+      }
+
+      await tx
+        .insert(UserRoles)
+        .values({ userId: newUser?.id, roleId: role.id });
+
+      return { newUser };
+    });
+
+    const { newUser } = newUserTransaction;
 
     logger.info(
       `[ USER REGISTRATION ] - User ID: ${newUser && newUser.id} was registered successfully`,
@@ -96,10 +118,13 @@ class AuthServices {
       throw new BadRequestError("Invalid registration details");
     }
 
+    const userRoles = await getUserWithPermissions(newUser.email);
+
     const { accessToken, refreshToken } = await Tokens.generateTokens({
       id: newUser.id,
       userId: newUser.userId,
-      role: newUser.role,
+      roles: userRoles?.roles as string[],
+      permissions: userRoles?.permissions as string[],
       email: newUser.email,
     });
 
