@@ -5,7 +5,8 @@ interface ITokenPayload {
   id: string;
   userId: string;
   email: string;
-  role: string;
+  roles: string[];
+  permissions: string[];
 }
 
 const ACCESS_TOKEN_SECRET = new TextEncoder().encode(
