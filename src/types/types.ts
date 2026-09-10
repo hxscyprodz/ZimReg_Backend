@@ -40,7 +40,8 @@ export interface RequestWithUser extends Request {
     id: string;
     userId: string;
     email: string;
-    role: (typeof roles.enumValues)[number];
+    permissions: string[];
+    roles: string[];
     iat: number;
     exp: number;
   };
