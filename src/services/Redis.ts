@@ -83,7 +83,7 @@ export class RedisService {
   private async flushDB() {
     if (config.IS_LOCAL_ENVIRONMENT) {
       try {
-        await this.client.flushDb();
+        //await this.client.flushDb();
         logger.info(`[${TAG}] Redis database flushed`);
       } catch (err) {
         logger.error(`[${TAG}] Failed to flush Redis DB: ${err}`);
