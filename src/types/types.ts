@@ -12,8 +12,9 @@ import {
   UpdateProfileSchema,
   CreateIdApplication,
   CreateBirthCertificateApplication,
+  RegisterStaffWithUser,
 } from "../validators/validators";
-import { applicationStatus, roles } from "../db/Columns.Helper";
+import { applicationStatus } from "../db/Columns.Helper";
 
 export enum StatusCodes {
   OK = 200,
@@ -68,3 +69,4 @@ export type TCreateIdApplication = z.infer<typeof CreateIdApplication>;
 export type TCreateBirthCertificateApplication = z.infer<
   typeof CreateBirthCertificateApplication
 >;
+export type TRegisterStaffMemberPayload = z.infer<typeof RegisterStaffWithUser>;

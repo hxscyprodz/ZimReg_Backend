@@ -42,6 +42,16 @@ export const RegisterUserSchema = z.object({
   email: z.email(),
 });
 
+export const RegisterStaffMember = z.object({
+  nationalIdNumber: z.string().length(14),
+  roleId: z.uuid(),
+  station: z.uuid(),
+});
+
+export const RegisterStaffWithUser = RegisterUserSchema.extend(
+  RegisterStaffMember.shape,
+);
+
 export const LoginUserSchema = z.object({
   email: z.email(),
   password: z.string().min(8).max(12),
