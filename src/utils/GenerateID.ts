@@ -18,6 +18,16 @@ class GenerateIds {
     return `CT-${year}${month}${normalizedValue}`;
   }
 
+  static async StaffID(baseKey: string): Promise<string> {
+    const { month, year } = this.getDateComponents();
+
+    const monthlyKey = `${baseKey}:${year}${month}`;
+    const newValue = await redisClient.incr(monthlyKey);
+
+    const normalizedValue = newValue.toString().padStart(4, "0");
+    return `SM-${year}${month}${normalizedValue}`;
+  }
+
   static async ApplicationID(type: "BT" | "ID", baseKey: string) {
     const { month, year } = this.getDateComponents();
 
