@@ -1,6 +1,12 @@
-import { or, eq } from "drizzle-orm";
+import { or, eq, and } from "drizzle-orm";
 import { db } from "../config/db";
-import { BirthCertificates, Roles, UserRoles, Users } from "../db/schemas";
+import {
+  BirthCertificates,
+  Roles,
+  StaffMembers,
+  UserRoles,
+  Users,
+} from "../db/schemas";
 import { TLoginUserPayload, TRegisterUserPayload } from "../types/types";
 import GenerateIds from "../utils/GenerateID";
 import { BadRequestError, NotFoundError } from "../errors/errors";
@@ -142,6 +148,20 @@ class AuthServices {
       throw new BadRequestError("Bad credentials");
     }
 
+    const [isStaffMember] = await db
+      .select({
+        staffId: StaffMembers.staffId,
+        station: StaffMembers.station,
+      })
+      .from(StaffMembers)
+      .where(
+        and(
+          eq(StaffMembers.nationalIdNumber, user.nationalIdNumber),
+          eq(StaffMembers.status, "ACTIVE"),
+        ),
+      )
+      .limit(1);
+
     const isValidPassword = await Hashing.verifyPassword(
       payload.password,
       user.hashedPassword!,
@@ -152,9 +172,10 @@ class AuthServices {
 
     const { hashedPassword, ...safeUser } = user;
 
-    const { accessToken, refreshToken } = await Tokens.generateTokens(
-      safeUser!,
-    );
+    const { accessToken, refreshToken } = await Tokens.generateTokens({
+      ...safeUser,
+      ...isStaffMember,
+    });
 
     return {
       user: safeUser,

@@ -43,6 +43,8 @@ export interface RequestWithUser extends Request {
     email: string;
     permissions: string[];
     roles: string[];
+    staffId?: string;
+    station?: string;
     iat: number;
     exp: number;
   };
