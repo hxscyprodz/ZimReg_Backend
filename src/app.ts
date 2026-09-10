@@ -45,11 +45,11 @@ app.use(cookieParser());
 
 app.use("/api/v1/auth", AuthRoutes);
 app.use("/api/v1/profile", Authenticate, ProfileRoutes);
-app.use("/api/v1/applications", Authenticate, ApplicationRoutes);
-app.use("/api/v1/provinces", Authenticate, ProvincesRoutes);
-app.use("/api/v1/districts", Authenticate, DistrictsRoutes);
-app.use("/api/v1/stations", Authenticate, StationsRoutes);
-app.use("/api/v1/hospitals", Authenticate, HospitalRoutes);
+app.use("/api/v1/applications", ApplicationRoutes);
+app.use("/api/v1/provinces", ProvincesRoutes);
+app.use("/api/v1/districts", DistrictsRoutes);
+app.use("/api/v1/stations", StationsRoutes);
+app.use("/api/v1/hospitals", HospitalRoutes);
 
 app.use(RouteNotFoundMiddleware);
 app.use(ErrorHandlingMiddleware);

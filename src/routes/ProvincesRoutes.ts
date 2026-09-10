@@ -1,12 +1,31 @@
 import { Router } from "express";
 import ProvincesControllers from "../controllers/ProvincesControllers";
+import Authenticate from "../middlewares/Auth";
+import Authorize from "../middlewares/Authorization";
 
 const router = Router();
+router.use(Authenticate);
 
-router.post("/", ProvincesControllers.createProvince);
-router.get("/:id", ProvincesControllers.getProvince);
-router.get("/", ProvincesControllers.getProvinces);
-router.put("/:id", ProvincesControllers.updateProvince);
-router.delete("/:id", ProvincesControllers.deleteProvince);
+router.post(
+  "/",
+  Authorize("province:create"),
+  ProvincesControllers.createProvince,
+);
+router.get(
+  "/:id",
+  Authorize("province:read"),
+  ProvincesControllers.getProvince,
+);
+router.get("/", Authorize("province:read"), ProvincesControllers.getProvinces);
+router.put(
+  "/:id",
+  Authorize("province:update"),
+  ProvincesControllers.updateProvince,
+);
+router.delete(
+  "/:id",
+  Authorize("province:delete"),
+  ProvincesControllers.deleteProvince,
+);
 
 export default router;
