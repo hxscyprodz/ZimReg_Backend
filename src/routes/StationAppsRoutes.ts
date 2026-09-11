@@ -12,9 +12,14 @@ router.get(
   StationApplicationsControllers.getStationApplications,
 );
 router.post(
-  "/:id",
+  "/reject/:id",
   Authorize("application:reject"),
   StationApplicationsControllers.rejectApplication,
+);
+router.post(
+  "/approve/:id",
+  Authorize("application:approve"),
+  StationApplicationsControllers.approveApplication,
 );
 
 export default router;

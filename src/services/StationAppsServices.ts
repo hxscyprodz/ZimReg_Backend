@@ -63,11 +63,79 @@ class StationApplicationsServices {
     };
   }
 
+  static async approveApplication(payload: IApplicationReviewPayload) {
+    const [staffMember] = await db
+      .select({
+        id: StaffMembers.id,
+        station: StaffMembers.station,
+      })
+      .from(StaffMembers)
+      .where(
+        and(
+          eq(StaffMembers.staffId, payload.staffId),
+          eq(StaffMembers.status, "ACTIVE"),
+        ),
+      )
+      .limit(1);
+
+    if (!staffMember) {
+      throw new NotFoundError("Staff member doesn't exist or is not activated");
+    }
+
+    const [application] = await db
+      .select()
+      .from(Applications)
+      .where(
+        and(
+          eq(Applications.id, payload.applicationId),
+          eq(Applications.station, staffMember.station),
+        ),
+      )
+      .limit(1);
+
+    if (!application) {
+      throw new NotFoundError(
+        "Application not found or belongs to another station",
+      );
+    }
+
+    if (application.status !== "PENDING_REVIEW") {
+      throw new BadRequestError(
+        "This application was rejected or already approved",
+      );
+    }
+
+    const [approvedApplication] = await db
+      .update(Applications)
+      .set({
+        updatedAt: new Date(),
+        approvedAt: new Date(),
+        approvedBy: staffMember.id,
+        status: "APPROVED",
+      })
+      .where(eq(Applications.id, application.id))
+      .returning({
+        id: Applications.id,
+        type: Applications.type,
+        trackingId: Applications.trackingId,
+        status: Applications.status,
+        station: Applications.station,
+        approvedBy: Applications.approvedBy,
+        approvedAt: Applications.approvedAt,
+        updatedAt: Applications.updatedAt,
+      });
+
+    return {
+      application: approvedApplication,
+    };
+  }
+
   static async rejectApplication(payload: IApplicationReviewPayload) {
     const [staffMember] = await db
       .select({
         id: StaffMembers.id,
         staffId: StaffMembers.staffId,
+        station: StaffMembers.station,
       })
       .from(StaffMembers)
       .where(
@@ -92,13 +160,15 @@ class StationApplicationsServices {
       .where(
         and(
           eq(Applications.id, payload.applicationId),
-          eq(Applications.station, payload.stationId),
+          eq(Applications.station, staffMember.station),
         ),
       )
       .limit(1);
 
     if (!application) {
-      throw new NotFoundError("Application doesn't exist");
+      throw new NotFoundError(
+        "Application doesn't exist or belongs to another station",
+      );
     }
 
     if (application.status === "REJECTED") {
