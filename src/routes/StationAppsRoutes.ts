@@ -11,5 +11,10 @@ router.get(
   Authorize("application:read"),
   StationApplicationsControllers.getStationApplications,
 );
+router.post(
+  "/:id",
+  Authorize("application:reject"),
+  StationApplicationsControllers.rejectApplication,
+);
 
 export default router;
