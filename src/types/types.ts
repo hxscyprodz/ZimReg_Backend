@@ -16,6 +16,13 @@ import {
 } from "../validators/validators";
 import { applicationStatus } from "../db/Columns.Helper";
 
+export interface IApplicationReviewPayload {
+  applicationId: string;
+  staffId: string;
+  stationId: string;
+  rejectionReason?: string;
+}
+
 export enum StatusCodes {
   OK = 200,
   CREATED = 201,
