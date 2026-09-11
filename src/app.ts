@@ -14,6 +14,7 @@ import ProvincesRoutes from "./routes/ProvincesRoutes";
 import DistrictsRoutes from "./routes/DistrictsRoutes";
 import StationsRoutes from "./routes/StationsRoutes";
 import HospitalRoutes from "./routes/HospitalsRoutes";
+import StationAppsRoutes from "./routes/StationAppsRoutes";
 import { ForbiddenError } from "./errors/errors";
 
 export const app = express();
@@ -47,6 +48,7 @@ app.use(cookieParser());
 app.use("/api/v1/auth", AuthRoutes);
 app.use("/api/v1/profile", Authenticate, ProfileRoutes);
 app.use("/api/v1/staff", StaffRoutes);
+app.use("/api/v1/station/applications", StationAppsRoutes);
 app.use("/api/v1/applications", ApplicationRoutes);
 app.use("/api/v1/provinces", ProvincesRoutes);
 app.use("/api/v1/districts", DistrictsRoutes);
