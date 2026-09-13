@@ -11,6 +11,7 @@ import {
   NationalIDs,
   BirthCertificateApplications,
   NationalIDsApplications,
+  Schedules,
 } from "./schemas";
 
 export const usersRelations = relations(Users, ({ one, many }) => ({
@@ -72,6 +73,14 @@ export const applicationsRelations = relations(Applications, ({ one }) => ({
     fields: [Applications.trackingId],
     references: [NationalIDsApplications.trackingId],
   }),
+  appointmentDate: one(Schedules, {
+    fields: [Applications.appointmentDate],
+    references: [Schedules.id],
+  }),
+}));
+
+export const appointmentRelations = relations(Schedules, ({ many }) => ({
+  applications: many(Applications),
 }));
 
 export const staffMembersRelations = relations(StaffMembers, ({ one }) => ({
