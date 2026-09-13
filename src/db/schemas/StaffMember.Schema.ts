@@ -5,7 +5,7 @@ import { staffStatus, timestamps } from "../Columns.Helper";
 
 export const StaffMembers = pgTable("staff_members", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
-  staffId: varchar("staff_id", { length: 12 }).notNull().unique(),
+  staffId: varchar("staff_id", { length: 14 }).notNull().unique(),
   nationalIdNumber: varchar("national_id_number")
     .notNull()
     .references(() => BirthCertificates.nationalIdNumber, {
