@@ -14,4 +14,5 @@ export * from "./Permissions.Schema";
 export * from "./UserRoles.Schema";
 export * from "./RolePermissions.Schema";
 export * from "./NationalIDApps.Schema";
+export * from "./Schedules.Schema";
 export * from "../Relations";

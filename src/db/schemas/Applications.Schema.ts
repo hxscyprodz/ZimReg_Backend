@@ -4,6 +4,7 @@ import {
   varchar,
   boolean,
   timestamp,
+  date,
 } from "drizzle-orm/pg-core";
 import { Users } from "./User.Schema";
 import { Stations } from "./Station.Schema";
@@ -13,6 +14,7 @@ import {
   applicationType,
   timestamps,
 } from "../Columns.Helper";
+import { Schedules } from "./Schedules.Schema";
 
 export const Applications = pgTable("applications", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
@@ -31,6 +33,9 @@ export const Applications = pgTable("applications", {
   }),
   approvedAt: timestamp("approved_at"),
   rejectedBy: uuid("rejected_by").references(() => StaffMembers.id, {
+    onDelete: "cascade",
+  }),
+  appointmentDate: uuid("appointment_date").references(() => Schedules.id, {
     onDelete: "cascade",
   }),
   rejectedAt: timestamp("rejected_at"),
