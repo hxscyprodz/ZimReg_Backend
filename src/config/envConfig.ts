@@ -9,6 +9,7 @@ const mandatoryEnvironmentVariables = [
   "REDIS_HOST_PORT",
   "ACCESS_TOKEN_SECRET",
   "REFRESH_TOKEN_SECRET",
+  "DAY_APPOINTMENT_CAPACITY",
 ];
 
 const missingEnvironmentVariables = mandatoryEnvironmentVariables.filter(
@@ -42,4 +43,5 @@ export const config = {
   REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET as string,
   REFRESH_TOKEN_TTL: Number(process.env.REFRESH_TOKEN_TTL) || 900000,
   ACCESS_TOKEN_TTL: Number(process.env.ACCESS_TOKEN_TTL) || 604800000,
+  DAY_APPOINTMENT_CAPACITY: Number(process.env.DAY_APPOINTMENT_CAPACITY) || 60,
 };

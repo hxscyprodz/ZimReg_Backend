@@ -2,6 +2,7 @@ import { gte, eq, count } from "drizzle-orm";
 import { db } from "../config/db";
 import { addDays, isSaturday, isSunday, parseISO } from "date-fns";
 import { Schedules, Applications } from "../db/schemas";
+import { config } from "../config/envConfig";
 
 const validateDate = (date: string | Date) => {
   let weekDayDate = typeof date === "string" ? parseISO(date) : new Date(date);
@@ -19,7 +20,7 @@ const validateDate = (date: string | Date) => {
 const createSchedule = async (date: string) => {
   const [newDate] = await db
     .insert(Schedules)
-    .values({ date, capacity: 2 })
+    .values({ date, capacity: config.DAY_APPOINTMENT_CAPACITY })
     .returning({
       id: Schedules.id,
       date: Schedules.date,
