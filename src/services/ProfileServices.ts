@@ -17,7 +17,6 @@ class ProfileServices {
         nationalIdNumber: Users.nationalIdNumber,
         phoneNumber: Users.phoneNumber,
         email: Users.email,
-        role: Users.role,
         isEmailVerified: Users.isEmailVerified,
         status: Users.status,
         createdAt: Users.createdAt,

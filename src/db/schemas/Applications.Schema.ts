@@ -4,7 +4,6 @@ import {
   varchar,
   boolean,
   timestamp,
-  date,
 } from "drizzle-orm/pg-core";
 import { Users } from "./User.Schema";
 import { Stations } from "./Station.Schema";

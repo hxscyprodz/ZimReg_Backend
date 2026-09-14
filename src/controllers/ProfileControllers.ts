@@ -14,7 +14,7 @@ class ProfileControllers {
     next: NextFunction,
   ) {
     try {
-      const userId = req.user.id;
+      const userId = req.user?.id;
 
       if (!userId) {
         throw new BadRequestError("Invalid profile Id");
@@ -53,7 +53,7 @@ class ProfileControllers {
 
       const userId = req.user?.id;
       const { profile } = await ProfileServices.updateProfile(
-        userId,
+        userId!,
         isValidRequestBody.data,
       );
       return res.status(StatusCodes.OK).json({
