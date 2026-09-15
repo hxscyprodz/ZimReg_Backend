@@ -17,10 +17,14 @@ const validateDate = (date: string | Date) => {
   return weekDayDate;
 };
 
-const createSchedule = async (date: string) => {
+const createSchedule = async (date: string, stationId: string) => {
   const [newDate] = await db
     .insert(Schedules)
-    .values({ date, capacity: config.DAY_APPOINTMENT_CAPACITY })
+    .values({
+      date,
+      capacity: config.DAY_APPOINTMENT_CAPACITY,
+      station: stationId,
+    })
     .returning({
       id: Schedules.id,
       date: Schedules.date,
@@ -31,7 +35,7 @@ const createSchedule = async (date: string) => {
   };
 };
 
-export const appointmentScheduler = async () => {
+export const appointmentScheduler = async (stationId: string) => {
   const today = new Date().toISOString().split("T")[0]!;
 
   const allDates = await db.select().from(Schedules);
@@ -42,7 +46,7 @@ export const appointmentScheduler = async () => {
       .toISOString()
       .split("T")[0]!;
 
-    return await createSchedule(validDate);
+    return await createSchedule(validDate, stationId);
   }
 
   const availableDates = await db
@@ -60,7 +64,7 @@ export const appointmentScheduler = async () => {
 
   if (availableDates.length < 1) {
     const validDate = validateDate(today).toISOString().split("T")[0]!;
-    return await createSchedule(validDate);
+    return await createSchedule(validDate, stationId);
   }
 
   for (const date of availableDates) {
@@ -75,5 +79,5 @@ export const appointmentScheduler = async () => {
   const nextDate = addDays(parseISO(lastDateStr), 1);
   const validDate = validateDate(nextDate).toISOString().split("T")[0]!;
 
-  return await createSchedule(validDate);
+  return await createSchedule(validDate, stationId);
 };
