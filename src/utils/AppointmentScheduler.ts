@@ -1,8 +1,9 @@
-import { gte, eq, count } from "drizzle-orm";
+import { gte, eq, count, and } from "drizzle-orm";
 import { db } from "../config/db";
 import { addDays, isSaturday, isSunday, parseISO } from "date-fns";
-import { Schedules, Applications } from "../db/schemas";
+import { Schedules, Applications, Stations } from "../db/schemas";
 import { config } from "../config/envConfig";
+import { NotFoundError } from "../errors/errors";
 
 const validateDate = (date: string | Date) => {
   let weekDayDate = typeof date === "string" ? parseISO(date) : new Date(date);
@@ -38,9 +39,21 @@ const createSchedule = async (date: string, stationId: string) => {
 export const appointmentScheduler = async (stationId: string) => {
   const today = new Date().toISOString().split("T")[0]!;
 
-  const allDates = await db.select().from(Schedules);
+  const [isStationAvailable] = await db
+    .select({ id: Stations.id })
+    .from(Stations)
+    .where(eq(Stations.id, stationId))
+    .limit(1);
+  if (!isStationAvailable) {
+    throw new NotFoundError("Station doesn't exist");
+  }
 
-  if (allDates.length < 1) {
+  const [allDates] = await db
+    .select()
+    .from(Schedules)
+    .where(eq(Schedules.station, stationId));
+
+  if (!allDates) {
     const addTwoDaysProvision = addDays(today, 2).toISOString().split("T")[0]!;
     const validDate = validateDate(addTwoDaysProvision)
       .toISOString()
@@ -57,7 +70,7 @@ export const appointmentScheduler = async (stationId: string) => {
       applicationCount: count(Applications.id),
     })
     .from(Schedules)
-    .where(gte(Schedules.date, today))
+    .where(and(gte(Schedules.date, today), eq(Schedules.station, stationId)))
     .leftJoin(Applications, eq(Applications.appointmentDate, Schedules.id))
     .groupBy(Schedules.id)
     .orderBy(Schedules.date);
