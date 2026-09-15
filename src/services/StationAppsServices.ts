@@ -1,5 +1,5 @@
 import { db } from "../config/db";
-import { count, eq, and, ne } from "drizzle-orm";
+import { count, eq, and } from "drizzle-orm";
 import {
   Applications,
   BirthCertificates,
@@ -12,6 +12,7 @@ import {
   UnauthorizedError,
 } from "../errors/errors";
 import { IApplicationReviewPayload } from "../types/types";
+import { appointmentScheduler } from "../utils/AppointmentScheduler";
 
 class StationApplicationsServices {
   static async getStationApplications(
@@ -105,12 +106,17 @@ class StationApplicationsServices {
       );
     }
 
+    const { id: appointmentDate } = await appointmentScheduler(
+      staffMember.station,
+    );
+
     const [approvedApplication] = await db
       .update(Applications)
       .set({
         updatedAt: new Date(),
         approvedAt: new Date(),
         approvedBy: staffMember.id,
+        appointmentDate,
         status: "APPROVED",
       })
       .where(eq(Applications.id, application.id))
@@ -120,6 +126,7 @@ class StationApplicationsServices {
         trackingId: Applications.trackingId,
         status: Applications.status,
         station: Applications.station,
+        appointmentDate: Applications.appointmentDate,
         approvedBy: Applications.approvedBy,
         approvedAt: Applications.approvedAt,
         updatedAt: Applications.updatedAt,
