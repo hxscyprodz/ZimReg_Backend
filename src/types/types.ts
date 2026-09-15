@@ -78,3 +78,37 @@ export type TCreateBirthCertificateApplication = z.infer<
   typeof CreateBirthCertificateApplication
 >;
 export type TRegisterStaffMemberPayload = z.infer<typeof RegisterStaffWithUser>;
+
+export interface IMessagePayload {
+  recipientNumber: string;
+  type:
+    | "welcome"
+    | "application-received"
+    | "application-approved"
+    | "application-rejected"
+    | "application-tracking"
+    | "verification"
+    | "login-otp";
+  username?: string;
+  appointmentDate?: string;
+  trackingId?: string;
+  stationName?: string;
+  rejectionReason?: string;
+  applicationStatus?: string;
+  code?: string;
+}
+
+export interface IBaseMessage {
+  username: string;
+}
+
+export interface IVerificationMessage extends IBaseMessage {
+  code: string;
+}
+
+export interface IBaseApplicationMessage extends IBaseMessage {
+  trackingId: string;
+  stationName: string;
+  appointmentDate: string;
+  rejectionReason: string;
+}
