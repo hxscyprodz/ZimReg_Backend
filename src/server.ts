@@ -3,6 +3,7 @@ import Postgres from "./config/db";
 import { config } from "./config/envConfig";
 import logger from "./services/LoggerService";
 import { RedisService } from "./services/Redis";
+import WhatsAppService from "./services/WhatsappService";
 
 const port = config.PORT;
 
@@ -10,6 +11,7 @@ const startServer = async () => {
   try {
     await Postgres.connectDB();
     await RedisService.getInstance().connect();
+    await WhatsAppService.connectToWhatsApp();
     app.listen(port, () => {
       logger.info(`Server running on port ${port}...`);
     });
