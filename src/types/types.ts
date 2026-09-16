@@ -112,3 +112,9 @@ export interface IBaseApplicationMessage extends IBaseMessage {
   appointmentDate: string;
   rejectionReason: string;
 }
+
+export type TNationalIdGeneration = {
+  districtCode: string;
+  originDistrictCode: string;
+  baseKey: string;
+};
