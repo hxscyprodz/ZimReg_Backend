@@ -7,5 +7,5 @@ export const NationalIDs = pgTable("national_ids", {
     .notNull()
     .references(() => BirthCertificates.nationalIdNumber)
     .unique(),
-  imageUrl: varchar("image_url").notNull(),
+  imageUrl: varchar("image_url"),
 });

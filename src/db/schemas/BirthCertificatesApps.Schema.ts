@@ -1,4 +1,4 @@
-import { pgTable, varchar, uuid, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, varchar, uuid, uniqueIndex, date } from "drizzle-orm/pg-core";
 import { BirthCertificates } from "./BirthCertificate.Schema";
 import { Hospitals } from "./Hospital.Schema";
 import { Applications } from "./Applications.Schema";
@@ -17,6 +17,7 @@ export const BirthCertificateApplications = pgTable(
     surname: varchar("surname", { length: 100 }).notNull(),
     sex: sex("sex").notNull(),
     placeOfBirth: varchar("place_of_birth", { length: 255 }).notNull(),
+    dateOfBirth: date("date_of_birth").notNull(),
     villageOfOrigin: varchar("village_of_origin").notNull(),
     address: varchar("address", { length: 255 }).notNull(),
     hospital: uuid("hospital")
