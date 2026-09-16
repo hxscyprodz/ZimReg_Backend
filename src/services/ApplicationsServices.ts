@@ -349,6 +349,8 @@ class ApplicationsServices {
           sex: payload.sex,
           placeOfBirth: payload.placeOfBirth,
           villageOfOrigin: payload.villageOfOrigin,
+          districtOfOrigin: payload.districtOfOrigin,
+          dateOfBirth: payload.dateOfBirth,
           address: payload.address,
           hospital: hospital.id,
           motherIdNumber: payload.motherIdNumber,
@@ -363,6 +365,8 @@ class ApplicationsServices {
           surname: BirthCertificateApplications.surname,
           sex: BirthCertificateApplications.sex,
           villageOfOrigin: BirthCertificateApplications.villageOfOrigin,
+          districtOfOrigin: BirthCertificateApplications.districtOfOrigin,
+          dateOfBirth: BirthCertificateApplications.dateOfBirth,
           placeOfBirth: BirthCertificateApplications.placeOfBirth,
           address: BirthCertificateApplications.address,
         });

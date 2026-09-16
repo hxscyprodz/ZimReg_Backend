@@ -3,6 +3,7 @@ import { BirthCertificates } from "./BirthCertificate.Schema";
 import { Hospitals } from "./Hospital.Schema";
 import { Applications } from "./Applications.Schema";
 import { sex } from "../Columns.Helper";
+import { Districts } from "./District.Schema";
 
 export const BirthCertificateApplications = pgTable(
   "birth_applications",
@@ -19,6 +20,9 @@ export const BirthCertificateApplications = pgTable(
     placeOfBirth: varchar("place_of_birth", { length: 255 }).notNull(),
     dateOfBirth: date("date_of_birth").notNull(),
     villageOfOrigin: varchar("village_of_origin").notNull(),
+    districtOfOrigin: uuid("district_of_origin")
+      .notNull()
+      .references(() => Districts.id),
     address: varchar("address", { length: 255 }).notNull(),
     hospital: uuid("hospital")
       .notNull()
