@@ -9,5 +9,6 @@ export const Districts = pgTable("districts", {
     .notNull()
     .references(() => Provinces.id, { onDelete: "cascade" }),
   status: resourceStatus("status").default("AVAILABLE").notNull(),
+  code: varchar("code").notNull().unique(),
   ...timestamps,
 });
