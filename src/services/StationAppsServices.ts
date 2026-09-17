@@ -2,8 +2,13 @@ import { db } from "../config/db";
 import { count, eq, and } from "drizzle-orm";
 import {
   Applications,
+  BirthCertificateApplications,
   BirthCertificates,
+  Districts,
+  NationalIDs,
+  NationalIDsApplications,
   StaffMembers,
+  Stations,
   Users,
 } from "../db/schemas";
 import {
@@ -13,6 +18,7 @@ import {
 } from "../errors/errors";
 import { IApplicationReviewPayload } from "../types/types";
 import { appointmentScheduler } from "../utils/AppointmentScheduler";
+import { generateNationalIDNumber } from "../utils/NatonalIDNumber";
 
 class StationApplicationsServices {
   static async getStationApplications(
@@ -69,8 +75,12 @@ class StationApplicationsServices {
       .select({
         id: StaffMembers.id,
         station: StaffMembers.station,
+        district: Stations.district,
+        code: Districts.code,
       })
       .from(StaffMembers)
+      .innerJoin(Stations, eq(Stations.id, StaffMembers.station))
+      .innerJoin(Districts, eq(Districts.id, Stations.district))
       .where(
         and(
           eq(StaffMembers.staffId, payload.staffId),
@@ -110,27 +120,123 @@ class StationApplicationsServices {
       staffMember.station,
     );
 
-    const [approvedApplication] = await db
-      .update(Applications)
-      .set({
-        updatedAt: new Date(),
-        approvedAt: new Date(),
-        approvedBy: staffMember.id,
-        appointmentDate,
-        status: "APPROVED",
-      })
-      .where(eq(Applications.id, application.id))
-      .returning({
-        id: Applications.id,
-        type: Applications.type,
-        trackingId: Applications.trackingId,
-        status: Applications.status,
-        station: Applications.station,
-        appointmentDate: Applications.appointmentDate,
-        approvedBy: Applications.approvedBy,
-        approvedAt: Applications.approvedAt,
-        updatedAt: Applications.updatedAt,
+    let approvedApplication;
+
+    if (application.type === "BIRTH") {
+      const [applicationData] = await db
+        .select()
+        .from(BirthCertificateApplications)
+        .where(
+          eq(BirthCertificateApplications.trackingId, application.trackingId),
+        )
+        .limit(1);
+
+      if (!applicationData) {
+        throw new NotFoundError("Birth application details not found");
+      }
+
+      const [districtOfOrigin] = await db
+        .select({
+          id: Districts.id,
+          code: Districts.code,
+        })
+        .from(Districts)
+        .where(eq(Districts.id, applicationData.districtOfOrigin))
+        .limit(1);
+
+      if (!districtOfOrigin) {
+        throw new NotFoundError("District of origin code not found");
+      }
+
+      const nationalIdNumber = await generateNationalIDNumber({
+        districtCode: staffMember.code,
+        originDistrictCode: districtOfOrigin.code,
+        baseKey: "nationalId:sequence",
       });
+
+      await db.transaction(async (tx) => {
+        const [approvedBirthApplication] = await tx
+          .update(Applications)
+          .set({
+            updatedAt: new Date(),
+            approvedAt: new Date(),
+            approvedBy: staffMember.id,
+            appointmentDate,
+            status: "APPROVED",
+          })
+          .where(eq(Applications.id, application.id))
+          .returning({
+            id: Applications.id,
+            type: Applications.type,
+            trackingId: Applications.trackingId,
+            status: Applications.status,
+            station: Applications.station,
+            appointmentDate: Applications.appointmentDate,
+            approvedBy: Applications.approvedBy,
+            approvedAt: Applications.approvedAt,
+            updatedAt: Applications.updatedAt,
+          });
+
+        await tx.insert(BirthCertificates).values({
+          nationalIdNumber,
+          firstName: applicationData.firstName,
+          middleNames: applicationData.middleNames,
+          surname: applicationData.surname,
+          dateOfBirth: applicationData.dateOfBirth,
+          sex: applicationData.sex,
+          address: applicationData.address,
+          hospital: applicationData.hospital,
+          placeOfBirth: applicationData.placeOfBirth,
+          villageOfOrigin: applicationData.villageOfOrigin,
+          mother: applicationData.motherIdNumber,
+          ...(applicationData.fatherIdNumber && {
+            father: applicationData.fatherIdNumber,
+          }),
+          placeOfIssue: staffMember.station,
+        });
+
+        approvedApplication = approvedBirthApplication;
+      });
+    } else {
+      const [applicationData] = await db
+        .select()
+        .from(NationalIDsApplications)
+        .where(eq(NationalIDsApplications.trackingId, application.trackingId))
+        .limit(1);
+      if (!applicationData) {
+        throw new NotFoundError("National ID Application details not found");
+      }
+
+      await db.transaction(async (tx) => {
+        const [approvedIdApplication] = await tx
+          .update(Applications)
+          .set({
+            updatedAt: new Date(),
+            approvedAt: new Date(),
+            approvedBy: staffMember.id,
+            appointmentDate,
+            status: "APPROVED",
+          })
+          .where(eq(Applications.id, application.id))
+          .returning({
+            id: Applications.id,
+            type: Applications.type,
+            trackingId: Applications.trackingId,
+            status: Applications.status,
+            station: Applications.station,
+            appointmentDate: Applications.appointmentDate,
+            approvedBy: Applications.approvedBy,
+            approvedAt: Applications.approvedAt,
+            updatedAt: Applications.updatedAt,
+          });
+
+        await tx.insert(NationalIDs).values({
+          nationalIdNumber: applicationData.nationalIdNumber,
+        });
+
+        approvedApplication = approvedIdApplication;
+      });
+    }
 
     return {
       application: approvedApplication,
