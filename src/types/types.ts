@@ -15,6 +15,7 @@ import {
   RegisterStaffWithUser,
 } from "../validators/validators";
 import { applicationStatus } from "../db/Columns.Helper";
+import { Applications } from "../db/schemas";
 
 export interface IApplicationReviewPayload {
   applicationId: string;
@@ -121,3 +122,15 @@ export type TNationalIdGeneration = {
   originDistrictCode: string;
   baseKey: string;
 };
+
+export type IApprovedApplication = Omit<
+  typeof Applications.$inferSelect,
+  | "isPrinted"
+  | "createdAt"
+  | "rejectedBy"
+  | "deletedAt"
+  | "user"
+  | "rejectedBy"
+  | "rejectedAt"
+  | "rejectionReason"
+>;

@@ -152,11 +152,20 @@ class ApplicationsControllers {
         );
       }
 
+      const user = {
+        id: req.user?.id!,
+        fullName: `${req.user?.firstName} ${req.user?.surname}`,
+        phoneNumber: req.user?.phoneNumber!,
+      };
+      if (Object.keys(user).length < 3) {
+        throw new BadRequestError("Invalid user credentials");
+      }
+
       const { application } =
-        await ApplicationsServices.birthCertificateApplication(
-          isValidRequestBody.data,
-          userId,
-        );
+        await ApplicationsServices.birthCertificateApplication({
+          user,
+          ...isValidRequestBody.data,
+        });
 
       return res.status(StatusCodes.CREATED).json({
         success: true,
