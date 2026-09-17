@@ -17,9 +17,14 @@ import {
 import CalculateAge from "../utils/CalculateAge";
 import GenerateIds from "../utils/GenerateID";
 import { alias } from "drizzle-orm/pg-core";
+import WhatsAppService from "./WhatsappService";
 
 interface Payload extends TCreateIdApplication {
-  user: string;
+  user: {
+    id: string;
+    fullName: string;
+    phoneNumber: string;
+  };
 }
 
 class ApplicationsServices {
@@ -89,6 +94,19 @@ class ApplicationsServices {
   }
 
   static async nationalIdApplication(payload: Payload) {
+    const [isStationAvailable] = await db
+      .select({
+        id: Stations.id,
+        name: Stations.name,
+      })
+      .from(Stations)
+      .where(eq(Stations.id, payload.station))
+      .limit(1);
+
+    if (!isStationAvailable) {
+      throw new NotFoundError("Station selected not found");
+    }
+
     const [isApplicationAvailable] = await db
       .select()
       .from(NationalIDsApplications)
@@ -146,7 +164,7 @@ class ApplicationsServices {
         .values({
           type: "ID",
           trackingId,
-          user: payload.user,
+          user: payload.user.id,
           station: payload.station,
         })
         .returning({

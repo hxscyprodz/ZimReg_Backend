@@ -47,6 +47,9 @@ export interface RequestWithUser extends Request {
     id: string;
     userId: string;
     email: string;
+    phoneNumber: string;
+    firstName: string;
+    surname: string;
     permissions: string[];
     roles: string[];
     staffId?: string;
