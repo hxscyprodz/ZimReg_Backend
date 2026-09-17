@@ -77,13 +77,17 @@ class ApplicationsControllers {
         throw new BadRequestError("Invalid Id Application details");
       }
 
-      const userId = req.user?.id;
-      if (!userId) {
-        throw new BadRequestError("Invalid user ID");
+      const user = {
+        id: req.user?.id!,
+        fullName: `${req.user?.firstName} ${req.user?.surname}`,
+        phoneNumber: req.user?.phoneNumber!,
+      };
+      if (Object.keys(user).length < 3) {
+        throw new BadRequestError("Invalid user credentials");
       }
 
       const { application } = await ApplicationsServices.nationalIdApplication({
-        user: userId,
+        user,
         ...isValidRequestBody.data,
       });
 
@@ -93,7 +97,6 @@ class ApplicationsControllers {
         application,
       });
     } catch (error) {
-      console.log(error);
       logger.error(
         `[ ID-APPLICATION] - An error occurred while creating application: ${error}`,
       );
