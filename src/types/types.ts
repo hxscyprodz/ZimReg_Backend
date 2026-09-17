@@ -134,3 +134,11 @@ export type IApprovedApplication = Omit<
   | "rejectedAt"
   | "rejectionReason"
 >;
+
+export enum TAppRedisKeys {
+  loginOTP = "login-otp",
+  verificationOTP = "verification-otp",
+  userIdSequence = "user-sequence",
+  staffIdSequence = "staff-sequence",
+  applicationIdSequence = "applications:sequence",
+}

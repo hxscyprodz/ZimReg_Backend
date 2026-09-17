@@ -7,7 +7,7 @@ import {
   UserRoles,
   Users,
 } from "../db/schemas";
-import { TRegisterStaffMemberPayload } from "../types/types";
+import { TAppRedisKeys, TRegisterStaffMemberPayload } from "../types/types";
 import { BadRequestError } from "../errors/errors";
 import GenerateIds from "../utils/GenerateID";
 import Hashing from "../utils/Hashing";
@@ -68,7 +68,7 @@ class StaffServices {
 
           const hashedPassword = await Hashing.hashPassword(password);
 
-          const userId = await GenerateIds.UserID("user:sequence");
+          const userId = await GenerateIds.UserID(TAppRedisKeys.userIdSequence);
           const [newUser] = await tx
             .insert(Users)
             .values({ ...user, password: hashedPassword, userId })
@@ -84,7 +84,9 @@ class StaffServices {
 
           if (!newUser) return null;
 
-          const staffId = await GenerateIds.StaffID("staff:sequence");
+          const staffId = await GenerateIds.StaffID(
+            TAppRedisKeys.staffIdSequence,
+          );
           const [newStaffMember] = await tx
             .insert(StaffMembers)
             .values({
@@ -125,7 +127,7 @@ class StaffServices {
     }
 
     const createStaffMemberTransaction = await db.transaction(async (tx) => {
-      const staffId = await GenerateIds.StaffID("staff:sequence");
+      const staffId = await GenerateIds.StaffID(TAppRedisKeys.staffIdSequence);
 
       const [newStaffMember] = await tx
         .insert(StaffMembers)

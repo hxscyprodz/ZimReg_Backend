@@ -7,7 +7,11 @@ import {
   UserRoles,
   Users,
 } from "../db/schemas";
-import { TLoginUserPayload, TRegisterUserPayload } from "../types/types";
+import {
+  TAppRedisKeys,
+  TLoginUserPayload,
+  TRegisterUserPayload,
+} from "../types/types";
 import GenerateIds from "../utils/GenerateID";
 import { BadRequestError, NotFoundError } from "../errors/errors";
 import Hashing from "../utils/Hashing";
@@ -70,7 +74,7 @@ class AuthServices {
       throw new BadRequestError("User already exists");
     }
 
-    const userId = await GenerateIds.UserID("user:sequence");
+    const userId = await GenerateIds.UserID(TAppRedisKeys.userIdSequence);
 
     const hashedPassword = await Hashing.hashPassword(password);
 

@@ -13,6 +13,7 @@ import { BadRequestError, NotFoundError } from "../errors/errors";
 import {
   TCreateBirthCertificateApplication,
   TCreateIdApplication,
+  TAppRedisKeys,
 } from "../types/types";
 import CalculateAge from "../utils/CalculateAge";
 import GenerateIds from "../utils/GenerateID";
@@ -161,7 +162,7 @@ class ApplicationsServices {
 
     const trackingId = await GenerateIds.ApplicationID(
       "ID",
-      "applications:sequence",
+      TAppRedisKeys.applicationIdSequence,
     );
 
     const newApplicationTransaction = await db.transaction(async (tx) => {
