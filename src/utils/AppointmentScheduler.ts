@@ -45,6 +45,7 @@ const createSchedule = async (date: string, stationId: string) => {
 
   return {
     id: newDate?.id,
+    date: newDate?.date,
   };
 };
 
@@ -96,6 +97,7 @@ export const appointmentScheduler = async (stationId: string) => {
     if (date.applicationCount < date.capacity) {
       return {
         id: date.id,
+        date: date.date,
       };
     }
   }

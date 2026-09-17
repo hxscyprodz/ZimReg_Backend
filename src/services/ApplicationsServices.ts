@@ -19,12 +19,18 @@ import GenerateIds from "../utils/GenerateID";
 import { alias } from "drizzle-orm/pg-core";
 import WhatsAppService from "./WhatsappService";
 
+interface User {
+  id: string;
+  fullName: string;
+  phoneNumber: string;
+}
+
 interface Payload extends TCreateIdApplication {
-  user: {
-    id: string;
-    fullName: string;
-    phoneNumber: string;
-  };
+  user: User;
+}
+
+interface BirthApplicationPayload extends TCreateBirthCertificateApplication {
+  user: User;
 }
 
 class ApplicationsServices {
@@ -195,6 +201,14 @@ class ApplicationsServices {
 
     const { newApplication, newIdApplication } = newApplicationTransaction;
 
+    await WhatsAppService.sendMessage({
+      type: "application-received",
+      recipientNumber: payload.user.phoneNumber,
+      username: payload.user.fullName,
+      trackingId: newIdApplication?.trackingId,
+      stationName: isStationAvailable.name,
+    });
+
     return {
       application: {
         ...newApplication,
@@ -278,10 +292,7 @@ class ApplicationsServices {
     };
   }
 
-  static async birthCertificateApplication(
-    payload: TCreateBirthCertificateApplication,
-    userId: string,
-  ) {
+  static async birthCertificateApplication(payload: BirthApplicationPayload) {
     const [isApplicationAvailable] = await db
       .select({
         id: BirthCertificateApplications.id,
@@ -306,6 +317,7 @@ class ApplicationsServices {
     const [station] = await db
       .select({
         id: Stations.id,
+        name: Stations.name,
       })
       .from(Stations)
       .where(eq(Stations.id, payload.station))
@@ -342,7 +354,7 @@ class ApplicationsServices {
       const [newApplication] = await tx
         .insert(Applications)
         .values({
-          user: userId,
+          user: payload.user.id,
           type: "BIRTH",
           station: station.id,
           trackingId,
@@ -396,6 +408,15 @@ class ApplicationsServices {
     });
 
     const { newApplication, birthApplication } = newApplicationTransaction;
+
+    await WhatsAppService.sendMessage({
+      type: "application-received",
+      recipientNumber: payload.user.phoneNumber,
+      username: payload.user.fullName,
+      trackingId: newApplication?.trackingId,
+      stationName: station.name,
+    });
+
     return {
       application: {
         ...newApplication,

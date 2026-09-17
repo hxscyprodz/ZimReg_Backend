@@ -67,7 +67,7 @@ export class WhatsAppService {
     WhatsAppService.sock.ev.on("creds.update", saveCreds);
   }
 
-  public static async sendWelcomeMessage(payload: IMessagePayload) {
+  public static async sendMessage(payload: IMessagePayload) {
     if (!WhatsAppService.sock) {
       logger.error(`[ ${FLAG}] - WhatsApp socket is not initialized.`);
       return;

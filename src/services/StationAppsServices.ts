@@ -16,9 +16,13 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from "../errors/errors";
-import { IApplicationReviewPayload } from "../types/types";
+import {
+  IApplicationReviewPayload,
+  IApprovedApplication,
+} from "../types/types";
 import { appointmentScheduler } from "../utils/AppointmentScheduler";
 import { generateNationalIDNumber } from "../utils/NatonalIDNumber";
+import WhatsAppService from "./WhatsappService";
 
 class StationApplicationsServices {
   static async getStationApplications(
@@ -75,6 +79,7 @@ class StationApplicationsServices {
       .select({
         id: StaffMembers.id,
         station: StaffMembers.station,
+        stationName: Stations.name,
         district: Stations.district,
         code: Districts.code,
       })
@@ -94,8 +99,21 @@ class StationApplicationsServices {
     }
 
     const [application] = await db
-      .select()
+      .select({
+        id: Applications.id,
+        type: Applications.type,
+        status: Applications.status,
+        trackingId: Applications.trackingId,
+        phoneNumber: Users.phoneNumber,
+        firstName: BirthCertificates.firstName,
+        surname: BirthCertificates.surname,
+      })
       .from(Applications)
+      .innerJoin(Users, eq(Users.id, Applications.user))
+      .innerJoin(
+        BirthCertificates,
+        eq(BirthCertificates.nationalIdNumber, Users.nationalIdNumber),
+      )
       .where(
         and(
           eq(Applications.id, payload.applicationId),
@@ -116,11 +134,10 @@ class StationApplicationsServices {
       );
     }
 
-    const { id: appointmentDate } = await appointmentScheduler(
-      staffMember.station,
-    );
+    const { id: appointmentDateId, date: appointmentDate } =
+      await appointmentScheduler(staffMember.station);
 
-    let approvedApplication;
+    let approvedApplication: IApprovedApplication | undefined;
 
     if (application.type === "BIRTH") {
       const [applicationData] = await db
@@ -161,7 +178,7 @@ class StationApplicationsServices {
             updatedAt: new Date(),
             approvedAt: new Date(),
             approvedBy: staffMember.id,
-            appointmentDate,
+            appointmentDate: appointmentDateId,
             status: "APPROVED",
           })
           .where(eq(Applications.id, application.id))
@@ -214,7 +231,7 @@ class StationApplicationsServices {
             updatedAt: new Date(),
             approvedAt: new Date(),
             approvedBy: staffMember.id,
-            appointmentDate,
+            appointmentDate: appointmentDateId,
             status: "APPROVED",
           })
           .where(eq(Applications.id, application.id))
@@ -238,6 +255,14 @@ class StationApplicationsServices {
       });
     }
 
+    await WhatsAppService.sendMessage({
+      type: "application-approved",
+      recipientNumber: application.phoneNumber,
+      appointmentDate: appointmentDate,
+      stationName: staffMember.stationName,
+      trackingId: approvedApplication?.trackingId,
+      username: `${application.firstName} ${application.surname}`,
+    });
     return {
       application: approvedApplication,
     };
@@ -268,8 +293,16 @@ class StationApplicationsServices {
         id: Applications.id,
         station: Applications.station,
         status: Applications.status,
+        phoneNumber: Users.phoneNumber,
+        firstName: BirthCertificates.firstName,
+        surname: BirthCertificates.surname,
       })
       .from(Applications)
+      .innerJoin(Users, eq(Users.id, Applications.user))
+      .innerJoin(
+        BirthCertificates,
+        eq(BirthCertificates.nationalIdNumber, Users.nationalIdNumber),
+      )
       .where(
         and(
           eq(Applications.id, payload.applicationId),
@@ -288,7 +321,7 @@ class StationApplicationsServices {
       throw new BadRequestError("Application is already rejected");
     }
 
-    const [newApplication] = await db
+    const [rejectedApplication] = await db
       .update(Applications)
       .set({
         updatedAt: new Date(),
@@ -314,8 +347,16 @@ class StationApplicationsServices {
         updatedAt: Applications.updatedAt,
       });
 
+    await WhatsAppService.sendMessage({
+      type: "application-rejected",
+      recipientNumber: application.phoneNumber,
+      trackingId: rejectedApplication?.trackingId,
+      rejectionReason: rejectedApplication?.rejectionReason!,
+      username: `${application.firstName} ${application.surname}`,
+    });
+
     return {
-      application: newApplication,
+      application: rejectedApplication,
     };
   }
 }
