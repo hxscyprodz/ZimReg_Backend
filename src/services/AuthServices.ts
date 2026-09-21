@@ -18,6 +18,7 @@ import Hashing from "../utils/Hashing";
 import logger from "./LoggerService";
 import Tokens from "./Tokens";
 import { getUserWithPermissions } from "../utils/GetUserPermissions";
+import { deleteRedisRefreshToken } from "../utils/RefreshToken";
 
 class AuthServices {
   static async registerUser(payload: TRegisterUserPayload) {
@@ -186,6 +187,10 @@ class AuthServices {
       accessToken,
       refreshToken,
     };
+  }
+
+  static async logoutUser(userId: string) {
+    await deleteRedisRefreshToken(userId, TAppRedisKeys.refreshToken);
   }
 }
 

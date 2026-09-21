@@ -141,6 +141,7 @@ export enum TAppRedisKeys {
   userIdSequence = "user-sequence",
   staffIdSequence = "staff-sequence",
   applicationIdSequence = "applications:sequence",
+  refreshToken = "refresh_token",
 }
 
 export type GeminiResponse = {
