@@ -1,8 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import AuthServices from "../services/AuthServices";
-import { LoginUserSchema, RegisterUserSchema } from "../validators/validators";
-import { BadRequestError } from "../errors/errors";
-import { StatusCodes } from "../types/types";
+import {
+  LoginUserSchema,
+  RegisterUserSchema,
+  UUIDSchema,
+} from "../validators/validators";
+import { BadRequestError, UnauthorizedError } from "../errors/errors";
+import { RequestWithUser, StatusCodes } from "../types/types";
 import logger from "../services/LoggerService";
 import Cookies from "../utils/Cookies";
 
@@ -55,6 +59,33 @@ class AuthControllers {
     } catch (error) {
       logger.error(
         `[ ${FLAG}] - An error occurred while logging in user: ${error}`,
+      );
+      next(error);
+    }
+  }
+
+  static async logoutUser(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const isValidUserId = UUIDSchema.safeParse(req.user);
+      if (!isValidUserId.success) {
+        throw new UnauthorizedError("Invalid user Id");
+      }
+
+      await AuthServices.logoutUser(isValidUserId.data.id);
+      // Clear session cookies
+      Cookies.clearCookies(res);
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "User logged out successfully",
+      });
+    } catch (error) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while logging out user: ${error}`,
       );
       next(error);
     }
