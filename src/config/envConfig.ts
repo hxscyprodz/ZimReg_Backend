@@ -10,6 +10,7 @@ const mandatoryEnvironmentVariables = [
   "ACCESS_TOKEN_SECRET",
   "REFRESH_TOKEN_SECRET",
   "DAY_APPOINTMENT_CAPACITY",
+  "GEMINI_API_KEY",
 ];
 
 const missingEnvironmentVariables = mandatoryEnvironmentVariables.filter(
@@ -44,4 +45,5 @@ export const config = {
   REFRESH_TOKEN_TTL: Number(process.env.REFRESH_TOKEN_TTL) || 900000,
   ACCESS_TOKEN_TTL: Number(process.env.ACCESS_TOKEN_TTL) || 604800000,
   DAY_APPOINTMENT_CAPACITY: Number(process.env.DAY_APPOINTMENT_CAPACITY) || 60,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY as string,
 };

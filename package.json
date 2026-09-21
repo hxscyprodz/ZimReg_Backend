@@ -25,6 +25,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@google/genai": "^2.23.0",
     "@whiskeysockets/baileys": "^7.0.0-rc14",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
