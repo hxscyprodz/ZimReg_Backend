@@ -142,3 +142,12 @@ export enum TAppRedisKeys {
   staffIdSequence = "staff-sequence",
   applicationIdSequence = "applications:sequence",
 }
+
+export type GeminiResponse = {
+  isValid: boolean;
+  documentType: string;
+  isClear: boolean;
+  isZimbabweanDocument: boolean;
+  confidenceScore: number;
+  reason: string;
+};
