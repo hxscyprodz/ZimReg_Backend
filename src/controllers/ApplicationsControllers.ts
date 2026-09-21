@@ -7,7 +7,7 @@ import {
   CreateIdApplication,
   UUIDSchema,
 } from "../validators/validators";
-import { BadRequestError } from "../errors/errors";
+import { BadRequestError, UnauthorizedError } from "../errors/errors";
 
 class ApplicationsControllers {
   static async trackApplication(
@@ -17,6 +17,10 @@ class ApplicationsControllers {
   ) {
     try {
       const trackingId = req.params?.trackingId;
+      const isValidUserId = UUIDSchema.safeParse(req.user);
+      if (!isValidUserId.success) {
+        throw new UnauthorizedError("Not authorized to perform this operation");
+      }
 
       if (!trackingId) {
         throw new BadRequestError("Invalid application ID");
@@ -24,6 +28,7 @@ class ApplicationsControllers {
 
       const { application } = await ApplicationsServices.trackApplication(
         trackingId.toString(),
+        isValidUserId.data.id,
       );
       return res.status(StatusCodes.OK).json({
         success: true,

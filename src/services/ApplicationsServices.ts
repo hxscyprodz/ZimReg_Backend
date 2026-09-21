@@ -35,7 +35,7 @@ interface BirthApplicationPayload extends TCreateBirthCertificateApplication {
 }
 
 class ApplicationsServices {
-  static async trackApplication(trackingId: string) {
+  static async trackApplication(trackingId: string, userId: string) {
     const [application] = await db
       .select({
         id: Applications.id,
@@ -45,7 +45,12 @@ class ApplicationsServices {
         createdAt: Applications.createdAt,
       })
       .from(Applications)
-      .where(or(eq(Applications.trackingId, trackingId)))
+      .where(
+        and(
+          eq(Applications.trackingId, trackingId),
+          eq(Applications.user, userId),
+        ),
+      )
       .limit(1);
 
     if (!application) {
