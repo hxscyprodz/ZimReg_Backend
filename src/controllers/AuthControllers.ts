@@ -90,6 +90,37 @@ class AuthControllers {
       next(error);
     }
   }
+
+  static async refreshToken(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const isValidUserId = UUIDSchema.safeParse(req.user);
+      if (!isValidUserId.success) {
+        throw new UnauthorizedError("Invalid user Id");
+      }
+
+      const currentRefreshToken = req.cookies.refreshToken;
+      const { accessToken, refreshToken } = await AuthServices.refreshToken(
+        isValidUserId.data.id,
+        currentRefreshToken,
+      );
+
+      Cookies.setCookies(res, accessToken, refreshToken);
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Refresh token retrieved successfully",
+      });
+    } catch (error) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while generating refresh token`,
+      );
+      next(error);
+    }
+  }
 }
 
 export default AuthControllers;

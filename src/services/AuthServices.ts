@@ -13,12 +13,20 @@ import {
   TRegisterUserPayload,
 } from "../types/types";
 import GenerateIds from "../utils/GenerateID";
-import { BadRequestError, NotFoundError } from "../errors/errors";
+import {
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../errors/errors";
 import Hashing from "../utils/Hashing";
 import logger from "./LoggerService";
 import Tokens from "./Tokens";
 import { getUserWithPermissions } from "../utils/GetUserPermissions";
-import { deleteRedisRefreshToken } from "../utils/RefreshToken";
+import {
+  deleteRedisRefreshToken,
+  getRedisRefreshToken,
+  setRedisRefreshToken,
+} from "../utils/RefreshToken";
 
 class AuthServices {
   static async registerUser(payload: TRegisterUserPayload) {
@@ -139,6 +147,12 @@ class AuthServices {
       email: newUser.email,
     });
 
+    await setRedisRefreshToken(
+      newUser.id,
+      TAppRedisKeys.refreshToken,
+      refreshToken,
+    );
+
     return {
       user: newUser,
       accessToken,
@@ -182,6 +196,12 @@ class AuthServices {
       ...isStaffMember,
     });
 
+    await setRedisRefreshToken(
+      safeUser.id,
+      TAppRedisKeys.refreshToken,
+      refreshToken,
+    );
+
     return {
       user: safeUser,
       accessToken,
@@ -191,6 +211,34 @@ class AuthServices {
 
   static async logoutUser(userId: string) {
     await deleteRedisRefreshToken(userId, TAppRedisKeys.refreshToken);
+  }
+
+  static async refreshToken(userId: string, currentRefreshToken: string) {
+    const redisRefreshToken = await getRedisRefreshToken(
+      userId,
+      TAppRedisKeys.refreshToken,
+    );
+
+    if (!redisRefreshToken || redisRefreshToken !== currentRefreshToken) {
+      throw new UnauthorizedError("Invalid refresh token");
+    }
+
+    const decoded = await Tokens.verifyRefreshToken(currentRefreshToken);
+
+    const { accessToken, refreshToken } = await Tokens.generateTokens({
+      ...decoded.payload,
+    });
+
+    await setRedisRefreshToken(
+      decoded.payload.id,
+      TAppRedisKeys.refreshToken,
+      refreshToken,
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+    };
   }
 }
 
