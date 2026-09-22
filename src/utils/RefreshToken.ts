@@ -4,6 +4,21 @@ import { redisClient } from "../services/Redis";
 import { StatusCodes } from "../types/types";
 import { config } from "../config/envConfig";
 
+export const getRedisRefreshToken = async (userId: string, baseKey: string) => {
+  try {
+    const refreshToken = await redisClient.get(`${baseKey}:${userId}`);
+    return refreshToken;
+  } catch (error) {
+    logger.error(
+      `An error occurred while retrieving refresh token in memory: ${error}`,
+    );
+    throw new CustomError(
+      "An error occurred while retrieving refresh token in memory",
+      StatusCodes.INTERNAL_SERVER_ERROR,
+    );
+  }
+};
+
 export const setRedisRefreshToken = async (
   userId: string,
   baseKey: string,

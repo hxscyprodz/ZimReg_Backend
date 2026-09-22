@@ -1,5 +1,6 @@
-import { SignJWT, jwtVerify } from "jose";
+import { SignJWT, jwtVerify, JWTVerifyResult } from "jose";
 import { config } from "../config/envConfig";
+import { IUser } from "../types/types";
 
 interface ITokenPayload {
   id: string;
@@ -43,11 +44,15 @@ class Tokens {
       .sign(REFRESH_TOKEN_SECRET);
   }
 
-  static async verifyAccessToken(accessToken: string) {
+  static async verifyAccessToken(
+    accessToken: string,
+  ): Promise<JWTVerifyResult<IUser>> {
     return await jwtVerify(accessToken, ACCESS_TOKEN_SECRET);
   }
 
-  static async verifyRefreshToken(refreshToken: string) {
+  static async verifyRefreshToken(
+    refreshToken: string,
+  ): Promise<JWTVerifyResult<IUser>> {
     return await jwtVerify(refreshToken, REFRESH_TOKEN_SECRET);
   }
 }

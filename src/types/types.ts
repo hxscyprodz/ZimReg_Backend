@@ -43,21 +43,23 @@ export enum ESex {
   FEMALE = "FEMALE",
 }
 
+export interface IUser {
+  id: string;
+  userId: string;
+  email: string;
+  phoneNumber: string;
+  firstName: string;
+  surname: string;
+  permissions: string[];
+  roles: string[];
+  staffId?: string;
+  station?: string;
+  iat: number;
+  exp: number;
+}
+
 export interface RequestWithUser extends Request {
-  user?: {
-    id: string;
-    userId: string;
-    email: string;
-    phoneNumber: string;
-    firstName: string;
-    surname: string;
-    permissions: string[];
-    roles: string[];
-    staffId?: string;
-    station?: string;
-    iat: number;
-    exp: number;
-  };
+  user?: IUser;
 }
 
 export interface IUserDashboardApplication {
