@@ -31,6 +31,10 @@ export class RedisService {
     });
 
     this.setupListeners();
+
+    this.connect().catch((err) => {
+      logger.error(`[${TAG}] Background connection failed: ${err.message}`);
+    });
   }
 
   private setupListeners() {
