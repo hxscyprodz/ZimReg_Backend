@@ -50,6 +50,7 @@ export interface IUser {
   phoneNumber: string;
   firstName: string;
   surname: string;
+  nationalIdNumber: string;
   permissions: string[];
   roles: string[];
   staffId?: string;
