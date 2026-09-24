@@ -103,6 +103,43 @@ class StaffControllers {
       next(error);
     }
   }
+
+  static async updateStaffMember(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const isValidStaffId = UUIDSchema.safeParse(req.params);
+      const stationId = req.body?.stationId;
+      const permissions = req.user?.permissions!;
+
+      if (!isValidStaffId.success) {
+        throw new BadRequestError("Invalid staff ID");
+      }
+
+      if (!stationId) {
+        throw new BadRequestError("Invalid station Id");
+      }
+
+      const { staffMember } = await StaffServices.updateStaff({
+        staffId: isValidStaffId.data.id,
+        permissions,
+        stationId,
+      });
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Staff member updated successfully",
+        staffMember,
+      });
+    } catch (error: unknown) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while updating staff member`,
+      );
+      next(error);
+    }
+  }
 }
 
 export default StaffControllers;

@@ -8,9 +8,14 @@ import {
   UserRoles,
   Users,
 } from "../db/schemas";
-import { TAppRedisKeys, TRegisterStaffMemberPayload } from "../types/types";
+import {
+  IUpdateStaffPayload,
+  TAppRedisKeys,
+  TRegisterStaffMemberPayload,
+} from "../types/types";
 import {
   BadRequestError,
+  ConflictError,
   NotFoundError,
   UnauthorizedError,
 } from "../errors/errors";
@@ -312,6 +317,67 @@ class StaffServices {
     const newStaffMember = createStaffMemberTransaction?.staffMember;
     return {
       staffMember: newStaffMember,
+    };
+  }
+
+  static async updateStaff(payload: IUpdateStaffPayload) {
+    const [station] = await db
+      .select()
+      .from(Stations)
+      .where(eq(Stations.id, payload.stationId))
+      .limit(1);
+    if (!station) {
+      throw new NotFoundError("Station doesn't exist");
+    }
+
+    const [staffMember] = await db
+      .select({
+        id: StaffMembers.id,
+        station: StaffMembers.station,
+        firstName: BirthCertificates.firstName,
+        surname: BirthCertificates.surname,
+        nationalIdNumber: BirthCertificates.nationalIdNumber,
+        phoneNumber: Users.phoneNumber,
+        email: Users.email,
+        status: StaffMembers.status,
+      })
+      .from(StaffMembers)
+      .innerJoin(
+        BirthCertificates,
+        eq(BirthCertificates.nationalIdNumber, StaffMembers.nationalIdNumber),
+      )
+      .innerJoin(
+        Users,
+        eq(Users.nationalIdNumber, StaffMembers.nationalIdNumber),
+      )
+      .where(eq(StaffMembers.id, payload.staffId))
+      .limit(1);
+    if (!staffMember) {
+      throw new NotFoundError("Staff member not found");
+    }
+
+    if (staffMember.station === station.id) {
+      throw new ConflictError("Staff member already belongs to this station");
+    }
+
+    const [updatedStaff] = await db
+      .update(StaffMembers)
+      .set({
+        station: station.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(StaffMembers.id, staffMember.id))
+      .returning({
+        id: StaffMembers.id,
+        staffId: StaffMembers.staffId,
+      });
+
+    return {
+      staffMember: {
+        ...staffMember,
+        ...updatedStaff,
+        stationName: station.name,
+      },
     };
   }
 }

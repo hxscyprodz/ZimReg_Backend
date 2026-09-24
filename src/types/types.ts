@@ -26,6 +26,7 @@ export interface IApplicationReviewPayload {
 export enum StatusCodes {
   OK = 200,
   CREATED = 201,
+  CONFLICT = 409,
   BAD_REQUEST = 400,
   UNAUTHORIZED = 401,
   FORBIDDEN = 403,
@@ -155,3 +156,9 @@ export type GeminiResponse = {
   confidenceScore: number;
   reason: string;
 };
+
+export interface IUpdateStaffPayload {
+  permissions: string[];
+  staffId: string;
+  stationId: string;
+}

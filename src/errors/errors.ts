@@ -44,6 +44,13 @@ export class RouteNotFoundError extends CustomError {
   }
 }
 
+export class ConflictError extends CustomError {
+  override name = "ConflictError";
+  constructor(message: string) {
+    super(message, StatusCodes.CONFLICT);
+  }
+}
+
 export class TokenExpiredError extends CustomError {
   override name = "TokenExpiredError";
   constructor(message: string) {
