@@ -140,6 +140,45 @@ class StaffControllers {
       next(error);
     }
   }
+
+  static async deleteStaffMember(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const stationId = req.user?.station;
+      const roles = req.user?.roles ?? [];
+      const staffId = UUIDSchema.safeParse(req.params);
+
+      if (!staffId.success) {
+        throw new BadRequestError("Invalid staff Id");
+      }
+
+      const isSuperAdmin = roles.includes("super_admin");
+
+      if (!stationId && !isSuperAdmin) {
+        throw new BadRequestError("Invalid station Id");
+      }
+
+      const { staffMember } = await StaffServices.deleteStaff({
+        stationId: stationId ?? "",
+        staffId: staffId.data.id,
+        roles,
+      });
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Staff member deleted successfully",
+        staffMember,
+      });
+    } catch (error: any) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while deleting staff member: ${error?.message}`,
+      );
+      next(error);
+    }
+  }
 }
 
 export default StaffControllers;
