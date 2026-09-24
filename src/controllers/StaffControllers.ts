@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import StaffServices from "../services/StaffServices";
 import logger from "../services/LoggerService";
-import { RegisterStaffWithUser } from "../validators/validators";
+import { RegisterStaffWithUser, UUIDSchema } from "../validators/validators";
 import { BadRequestError } from "../errors/errors";
 import { RequestWithUser, StatusCodes } from "../types/types";
 
@@ -28,6 +28,38 @@ class StaffControllers {
       });
     } catch (error) {
       logger.error(`[ ${FLAG} ] - An error occurred while adding staff member`);
+      next(error);
+    }
+  }
+
+  static async getStaffMember(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const roles = req.user?.roles;
+      const stationId = req.user?.station as string;
+
+      const isValidStaffId = UUIDSchema.safeParse(req.params);
+      if (!isValidStaffId.success) {
+        throw new BadRequestError("Invalid staff member Id");
+      }
+
+      const { staffMember } = await StaffServices.getStaff(
+        isValidStaffId.data.id,
+        stationId,
+        roles,
+      );
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Staff member details retrieved successfully",
+        staffMember,
+      });
+    } catch (error: unknown) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while retrieving staff member details`,
+      );
       next(error);
     }
   }
