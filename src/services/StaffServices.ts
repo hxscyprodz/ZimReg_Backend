@@ -9,6 +9,7 @@ import {
   Users,
 } from "../db/schemas";
 import {
+  IDeleteStaffPayload,
   IUpdateStaffPayload,
   TAppRedisKeys,
   TRegisterStaffMemberPayload,
@@ -16,6 +17,7 @@ import {
 import {
   BadRequestError,
   ConflictError,
+  ForbiddenError,
   NotFoundError,
   UnauthorizedError,
 } from "../errors/errors";
@@ -377,6 +379,98 @@ class StaffServices {
         ...staffMember,
         ...updatedStaff,
         stationName: station.name,
+      },
+    };
+  }
+
+  static async deleteStaff(payload: IDeleteStaffPayload) {
+    const isSuperAdmin = payload.roles.includes("super_admin");
+    const [staffMember] = await db
+      .select({
+        id: StaffMembers.id,
+        station: StaffMembers.station,
+        nationalIdNumber: BirthCertificates.nationalIdNumber,
+        firstName: BirthCertificates.firstName,
+        surname: BirthCertificates.surname,
+        phoneNumber: Users.phoneNumber,
+        email: Users.email,
+        stationName: Stations.name,
+        userId: Users.id,
+      })
+      .from(StaffMembers)
+      .innerJoin(
+        BirthCertificates,
+        eq(BirthCertificates.nationalIdNumber, StaffMembers.nationalIdNumber),
+      )
+      .innerJoin(Stations, eq(Stations.id, StaffMembers.station))
+      .innerJoin(
+        Users,
+        eq(Users.nationalIdNumber, StaffMembers.nationalIdNumber),
+      )
+      .where(
+        and(
+          eq(StaffMembers.id, payload.staffId),
+          ne(StaffMembers.status, "DELETED"),
+        ),
+      )
+      .limit(1);
+
+    if (!staffMember) {
+      throw new NotFoundError("Staff member doesn't exist");
+    }
+
+    if (!isSuperAdmin && staffMember.station !== payload.stationId) {
+      throw new ForbiddenError("Staff member doesn't exist in your station");
+    }
+
+    const roles = await db
+      .select({
+        roleName: Roles.name,
+        roleId: Roles.id,
+      })
+      .from(UserRoles)
+      .innerJoin(Roles, eq(Roles.id, UserRoles.roleId))
+      .where(eq(UserRoles.userId, staffMember.userId));
+
+    const citizenRole = roles.find((role) => role.roleName === "citizen");
+    if (!citizenRole) {
+      throw new BadRequestError("Invalid staff member details");
+    }
+
+    const deleteStaffMemberTransaction = await db.transaction(async (tx) => {
+      await tx
+        .delete(UserRoles)
+        .where(
+          and(
+            eq(UserRoles.userId, staffMember.userId),
+            ne(UserRoles.roleId, citizenRole.roleId),
+          ),
+        );
+
+      const [deletedStaffMember] = await tx
+        .update(StaffMembers)
+        .set({
+          status: "DELETED",
+          updatedAt: new Date(),
+          deletedAt: new Date(),
+        })
+        .where(eq(StaffMembers.id, staffMember.id))
+        .returning({
+          status: StaffMembers.status,
+          deletedAt: StaffMembers.deletedAt,
+        });
+
+      return {
+        deletedStaffMember,
+      };
+    });
+
+    const { deletedStaffMember } = deleteStaffMemberTransaction;
+
+    return {
+      staffMember: {
+        ...staffMember,
+        ...deletedStaffMember,
       },
     };
   }

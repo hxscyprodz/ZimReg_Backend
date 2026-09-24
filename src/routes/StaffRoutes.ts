@@ -14,5 +14,9 @@ router.put(
   Authorize("staff:update"),
   StaffControllers.updateStaffMember,
 );
-
+router.delete(
+  "/:id",
+  Authorize("staff:delete"),
+  StaffControllers.deleteStaffMember,
+);
 export default router;

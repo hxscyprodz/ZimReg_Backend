@@ -162,3 +162,10 @@ export interface IUpdateStaffPayload {
   staffId: string;
   stationId: string;
 }
+
+export interface IDeleteStaffPayload extends Omit<
+  IUpdateStaffPayload,
+  "permissions"
+> {
+  roles: string[];
+}
