@@ -26,6 +26,53 @@ interface Payload {
 }
 
 class StaffServices {
+  static async getStaff(staffId: string, stationId: string, roles?: string[]) {
+    const isSuperAdmin = roles?.includes("super_admin");
+    if (!isSuperAdmin && !stationId) {
+      throw new BadRequestError("Station Id is required for non-admin users");
+    }
+
+    const [staffMember] = await db
+      .select({
+        id: StaffMembers.id,
+        staffId: StaffMembers.staffId,
+        firstName: BirthCertificates.firstName,
+        surname: BirthCertificates.surname,
+        nationalIdNumber: StaffMembers.nationalIdNumber,
+        phoneNumber: Users.phoneNumber,
+        email: Users.email,
+        station: Stations.name,
+        status: StaffMembers.status,
+        createdAt: StaffMembers.createdAt,
+      })
+      .from(StaffMembers)
+      .innerJoin(
+        BirthCertificates,
+        eq(BirthCertificates.nationalIdNumber, StaffMembers.nationalIdNumber),
+      )
+      .innerJoin(
+        Users,
+        eq(Users.nationalIdNumber, StaffMembers.nationalIdNumber),
+      )
+      .innerJoin(Stations, eq(Stations.id, StaffMembers.station))
+      .where(
+        and(
+          eq(StaffMembers.id, staffId),
+          roles?.includes("super_admin")
+            ? undefined
+            : eq(StaffMembers.station, stationId),
+        ),
+      )
+      .limit(1);
+    if (!staffMember) {
+      throw new NotFoundError("Staff member not found");
+    }
+
+    return {
+      staffMember,
+    };
+  }
+
   static async getStaffMembers(payload: Payload) {
     let staffMember: { station: string; nationalIdNumber: string } = {
       station: "",
