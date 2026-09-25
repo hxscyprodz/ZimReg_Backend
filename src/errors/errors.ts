@@ -57,3 +57,10 @@ export class TokenExpiredError extends CustomError {
     super(message, StatusCodes.UNAUTHORIZED);
   }
 }
+
+export class InternalServerError extends CustomError {
+  override name = "InternalServerError";
+  constructor(message: string) {
+    super(message, StatusCodes.INTERNAL_SERVER_ERROR);
+  }
+}

@@ -16,6 +16,9 @@ import {
 } from "../validators/validators";
 import { applicationStatus } from "../db/Columns.Helper";
 import { Applications } from "../db/schemas";
+import { PgTransaction } from "drizzle-orm/pg-core";
+import { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
+import { ExtractTablesWithRelations } from "drizzle-orm";
 
 export interface IApplicationReviewPayload {
   applicationId: string;
@@ -169,3 +172,9 @@ export interface IDeleteStaffPayload extends Omit<
 > {
   roles: string[];
 }
+
+export type TTransaction = PgTransaction<
+  NodePgQueryResultHKT,
+  Record<string, never>,
+  ExtractTablesWithRelations<Record<string, never>>
+>;
