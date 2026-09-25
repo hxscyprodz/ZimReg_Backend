@@ -15,6 +15,7 @@ import DistrictsRoutes from "./routes/DistrictsRoutes";
 import StationsRoutes from "./routes/StationsRoutes";
 import HospitalRoutes from "./routes/HospitalsRoutes";
 import StationAppsRoutes from "./routes/StationAppsRoutes";
+import RolesRoutes from "./routes/RolesRoutes";
 import { ForbiddenError } from "./errors/errors";
 
 export const app = express();
@@ -54,6 +55,7 @@ app.use("/api/v1/provinces", ProvincesRoutes);
 app.use("/api/v1/districts", DistrictsRoutes);
 app.use("/api/v1/stations", StationsRoutes);
 app.use("/api/v1/hospitals", HospitalRoutes);
+app.use("/api/v1/roles", RolesRoutes);
 
 app.use(RouteNotFoundMiddleware);
 app.use(ErrorHandlingMiddleware);
