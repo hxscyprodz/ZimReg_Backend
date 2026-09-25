@@ -18,11 +18,13 @@ import {
   BadRequestError,
   ConflictError,
   ForbiddenError,
+  InternalServerError,
   NotFoundError,
   UnauthorizedError,
 } from "../errors/errors";
 import GenerateIds from "../utils/GenerateID";
 import Hashing from "../utils/Hashing";
+import { createStaffMember } from "./CreateStaffMemberService";
 
 interface Payload {
   nationalIdNumber: string;
@@ -176,6 +178,99 @@ class StaffServices {
   }
 
   static async createStaff(payload: TRegisterStaffMemberPayload) {
+    //checking if provided password match
+    if (payload.confirmPassword !== payload.password) {
+      throw new BadRequestError("Passwords don't match");
+    }
+
+    const roles = await db
+      .select()
+      .from(Roles)
+      .where(or(eq(Roles.id, payload.roleId), eq(Roles.name, "citizen")));
+
+    const providedRole = roles.find((r) => r.id === payload.roleId);
+
+    if (!providedRole) {
+      throw new BadRequestError("Role provided doesn't exist");
+    }
+
+    //checking if the staff member is available id the database
+    const [isStaffMemberAvailable] = await db
+      .select({
+        id: StaffMembers.id,
+        status: StaffMembers.status,
+        nationalIdNumber: StaffMembers.nationalIdNumber,
+      })
+      .from(StaffMembers)
+      .where(eq(StaffMembers.nationalIdNumber, payload.nationalIdNumber))
+      .limit(1);
+    if (isStaffMemberAvailable) {
+      //checking if the staff member was deleted
+      //restoring the deleted staff member
+      if (isStaffMemberAvailable.status === "DELETED") {
+        //check if the staff member has a citizen account
+        const [user] = await db
+          .select({ id: Users.id, status: Users.status })
+          .from(Users)
+          .where(
+            eq(Users.nationalIdNumber, isStaffMemberAvailable.nationalIdNumber),
+          )
+          .limit(1);
+        if (!user) {
+          throw new BadRequestError(
+            "Staff member must create citizen account first",
+          );
+        }
+
+        //database transaction for restoring staff member
+        const restoreStaffMemberTransaction = await db.transaction(
+          async (tx) => {
+            //changes the staff member status to "ACTIVE"
+            const [restoredStaffMember] = await tx
+              .update(StaffMembers)
+              .set({
+                status: "ACTIVE",
+                updatedAt: new Date(),
+              })
+              .where(eq(StaffMembers.id, isStaffMemberAvailable.id))
+              .returning({
+                id: StaffMembers.id,
+                staffId: StaffMembers.staffId,
+                station: StaffMembers.station,
+              });
+
+            //restores the user if their user account was deleted
+            if (user.status === "DELETED") {
+              await tx
+                .update(Users)
+                .set({
+                  status: "ACTIVE",
+                  updatedAt: new Date(),
+                })
+                .where(eq(Users.id, user.id));
+            }
+
+            //grants the user the provided role e.g(registrar_officer, station_admin)
+            await tx.insert(UserRoles).values({
+              userId: user.id,
+              roleId: providedRole.id,
+            });
+            return {
+              restoredStaffMember,
+            };
+          },
+        );
+
+        const { restoredStaffMember } = restoreStaffMemberTransaction;
+        return {
+          staffMember: restoredStaffMember,
+        };
+      }
+      //return a conflict error if the staff member is available and status is "ACTIVE"
+      throw new ConflictError("Staff member already exists");
+    }
+
+    //check if the nationalIdNumber is registered and return error "Citizen not registered" if not registered
     const [isRegistered] = await db
       .select({
         id: BirthCertificates.id,
@@ -188,17 +283,7 @@ class StaffServices {
       throw new BadRequestError("Citizen not registered");
     }
 
-    const roles = await db
-      .select()
-      .from(Roles)
-      .where(or(eq(Roles.id, payload.roleId), eq(Roles.name, "citizen")));
-
-    const citizenRole = roles.find((r) => r.name === "citizen");
-    const providedRole = roles.find((r) => r.id === payload.roleId);
-
-    if (!providedRole) {
-      throw new BadRequestError("Role doesn't exist");
-    }
+    const citizenRole = roles.find((role) => role.name === "citizen");
 
     if (!citizenRole) {
       throw new BadRequestError(
@@ -213,6 +298,8 @@ class StaffServices {
       .limit(1);
 
     if (!user) {
+      //if staff member doesn't have a citizen account
+      //creates the citizen account first
       const createStaffMemberWithUserTransaction = await db.transaction(
         async (tx) => {
           const {
@@ -224,12 +311,10 @@ class StaffServices {
             password,
             ...user
           } = payload;
-          if (confirmPassword !== password) {
-            throw new BadRequestError("Passwords don't match");
-          }
-
+          //hashing the provided password
           const hashedPassword = await Hashing.hashPassword(password);
 
+          //generates a unique and readable citizen account id
           const userId = await GenerateIds.UserID(TAppRedisKeys.userIdSequence);
           const [newUser] = await tx
             .insert(Users)
@@ -244,24 +329,17 @@ class StaffServices {
               createdAt: Users.createdAt,
             });
 
-          if (!newUser) return null;
+          if (!newUser) {
+            throw new InternalServerError("Failed to create citizen account");
+          }
 
-          const staffId = await GenerateIds.StaffID(
-            TAppRedisKeys.staffIdSequence,
+          const { newStaffMember } = await createStaffMember(
+            tx,
+            newUser?.nationalIdNumber,
+            payload.station,
           );
-          const [newStaffMember] = await tx
-            .insert(StaffMembers)
-            .values({
-              nationalIdNumber: newUser?.nationalIdNumber,
-              station: payload.station,
-              staffId,
-            })
-            .returning({
-              staffId: StaffMembers.staffId,
-              station: StaffMembers.station,
-              staffStatus: StaffMembers.status,
-            });
 
+          //create an array with unique roles to make sure the provided role is not the same with the citizen role
           const uniqueRoles = Array.from(
             new Set([citizenRole.id, providedRole.id]),
           );
@@ -289,20 +367,11 @@ class StaffServices {
     }
 
     const createStaffMemberTransaction = await db.transaction(async (tx) => {
-      const staffId = await GenerateIds.StaffID(TAppRedisKeys.staffIdSequence);
-
-      const [newStaffMember] = await tx
-        .insert(StaffMembers)
-        .values({
-          station: payload.station,
-          staffId,
-          nationalIdNumber: user.nationalIdNumber,
-        })
-        .returning({
-          id: StaffMembers.id,
-          staffId: StaffMembers.staffId,
-          station: StaffMembers.station,
-        });
+      const { newStaffMember } = await createStaffMember(
+        tx,
+        user.nationalIdNumber,
+        payload.station,
+      );
 
       if (!newStaffMember) return null;
 
