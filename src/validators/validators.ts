@@ -40,6 +40,11 @@ export const RegisterUserSchema = z.object({
   password: z.string().min(8).max(12),
   confirmPassword: z.string().min(8).max(12),
   email: z.email(),
+  platform: z
+    .enum(["registrar-portal", "citizen-portal"], {
+      error: () => ({ message: "Invalid or missing platform specified" }),
+    })
+    .default("citizen-portal"),
 });
 
 export const RegisterStaffMember = z.object({
@@ -55,6 +60,9 @@ export const RegisterStaffWithUser = RegisterUserSchema.extend(
 export const LoginUserSchema = z.object({
   email: z.email(),
   password: z.string().min(8).max(12),
+  platform: z.enum(["registrar-portal", "citizen-portal"], {
+    error: () => ({ message: "Invalid or missing platform specified" }),
+  }),
 });
 
 export const UpdateProfileSchema = z.object({

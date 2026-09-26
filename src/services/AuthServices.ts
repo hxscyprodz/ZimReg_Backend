@@ -27,6 +27,7 @@ import {
   getRedisRefreshToken,
   setRedisRefreshToken,
 } from "../utils/RefreshToken";
+import { generateAndSaveTokens } from "../utils/LoginTokensHelper";
 
 class AuthServices {
   static async registerUser(payload: TRegisterUserPayload) {
@@ -145,6 +146,7 @@ class AuthServices {
       roles: userRoles?.roles as string[],
       permissions: userRoles?.permissions as string[],
       email: newUser.email,
+      platform: payload.platform,
     });
 
     await setRedisRefreshToken(
@@ -162,50 +164,77 @@ class AuthServices {
 
   static async loginUser(payload: TLoginUserPayload) {
     const user = await getUserWithPermissions(payload.email);
+    const platform = payload.platform;
 
     if (!user) {
       throw new BadRequestError("Bad credentials");
     }
 
-    const [isStaffMember] = await db
-      .select({
-        staffId: StaffMembers.staffId,
-        station: StaffMembers.station,
-      })
-      .from(StaffMembers)
-      .where(
-        and(
-          eq(StaffMembers.nationalIdNumber, user.nationalIdNumber),
-          eq(StaffMembers.status, "ACTIVE"),
-        ),
-      )
-      .limit(1);
-
-    const isValidPassword = await Hashing.verifyPassword(
-      payload.password,
-      user.hashedPassword!,
-    );
-    if (!isValidPassword) {
-      throw new BadRequestError("Bad credentials");
-    }
-
     const { hashedPassword, ...safeUser } = user;
 
-    const { accessToken, refreshToken } = await Tokens.generateTokens({
-      ...safeUser,
-      ...isStaffMember,
-    });
+    if (platform === "registrar-portal") {
+      if (user.roles.includes("super_admin")) {
+        const { accessToken, refreshToken } = await generateAndSaveTokens({
+          safeUser,
+          platform,
+          password: payload.password,
+          hashedPassword: user.hashedPassword,
+        });
 
-    await setRedisRefreshToken(
-      safeUser.id,
-      TAppRedisKeys.refreshToken,
-      refreshToken,
-    );
+        return {
+          user: safeUser,
+          accessToken,
+          refreshToken,
+          platform,
+        };
+      }
+      const [isStaffMember] = await db
+        .select({
+          staffId: StaffMembers.staffId,
+          station: StaffMembers.station,
+        })
+        .from(StaffMembers)
+        .where(
+          and(
+            eq(StaffMembers.nationalIdNumber, user.nationalIdNumber),
+            eq(StaffMembers.status, "ACTIVE"),
+          ),
+        )
+        .limit(1);
+
+      if (!isStaffMember) {
+        throw new UnauthorizedError(
+          "Unauthorized: You do not have administrator permissions to access this portal",
+        );
+      }
+
+      const { accessToken, refreshToken } = await generateAndSaveTokens({
+        safeUser,
+        platform,
+        password: payload.password,
+        hashedPassword: user.hashedPassword,
+      });
+
+      return {
+        user: safeUser,
+        accessToken,
+        refreshToken,
+        platform,
+      };
+    }
+
+    const { accessToken, refreshToken } = await generateAndSaveTokens({
+      safeUser,
+      platform,
+      password: payload.password,
+      hashedPassword: user.hashedPassword,
+    });
 
     return {
       user: safeUser,
       accessToken,
       refreshToken,
+      platform,
     };
   }
 
