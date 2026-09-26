@@ -141,6 +141,43 @@ class StaffControllers {
     }
   }
 
+  static async updateStaffStatus(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const isValidStaffId = UUIDSchema.safeParse(req.params);
+      const staffStationId = req.user?.station;
+      const roles = req.user?.roles ?? [];
+
+      if (!isValidStaffId.success) {
+        throw new BadRequestError("Invalid staff Id");
+      }
+
+      if (!staffStationId && !roles.includes("super_admin")) {
+        throw new BadRequestError("Invalid station Id");
+      }
+
+      const { staffMember } = await StaffServices.updateStaffStatus({
+        staffId: isValidStaffId.data.id,
+        staffStationId,
+        roles,
+      });
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Staff member status updated successfully",
+        staffMember,
+      });
+    } catch (error) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while updating staff member's status: ${error}`,
+      );
+      next(error);
+    }
+  }
+
   static async deleteStaffMember(
     req: RequestWithUser,
     res: Response,
