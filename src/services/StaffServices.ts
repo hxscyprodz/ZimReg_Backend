@@ -452,6 +452,62 @@ class StaffServices {
     };
   }
 
+  static async updateStaffStatus(payload: {
+    staffId: string;
+    roles: string[];
+    staffStationId?: string;
+  }) {
+    const [isStaffMemberAvailable] = await db
+      .select({
+        id: StaffMembers.id,
+        station: StaffMembers.station,
+        status: StaffMembers.status,
+        nationalIdNumber: StaffMembers.nationalIdNumber,
+      })
+      .from(StaffMembers)
+      .where(eq(StaffMembers.id, payload.staffId))
+      .limit(1);
+    if (!isStaffMemberAvailable) {
+      throw new NotFoundError("Staff member doesn't exist");
+    }
+
+    const isSuperAdmin = payload.roles.includes("super_admin");
+
+    if (!isSuperAdmin) {
+      if (!payload.staffStationId) {
+        throw new ForbiddenError(
+          "Station ID is required to perform this action",
+        );
+      }
+
+      if (isStaffMemberAvailable.station !== payload.staffStationId) {
+        throw new ForbiddenError(
+          "You are forbidden from changing staff member status: As they don't belong to your station",
+        );
+      }
+    }
+
+    const newStatus =
+      isStaffMemberAvailable.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
+
+    const [updatedStaffMember] = await db
+      .update(StaffMembers)
+      .set({
+        status: newStatus,
+        updatedAt: new Date(),
+      })
+      .where(eq(StaffMembers.id, isStaffMemberAvailable.id))
+      .returning({
+        id: StaffMembers.id,
+        staffId: StaffMembers.staffId,
+        status: StaffMembers.status,
+      });
+
+    return {
+      staffMember: updatedStaffMember,
+    };
+  }
+
   static async deleteStaff(payload: IDeleteStaffPayload) {
     const isSuperAdmin = payload.roles.includes("super_admin");
     const [staffMember] = await db

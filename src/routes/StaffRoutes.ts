@@ -14,6 +14,11 @@ router.put(
   Authorize("staff:update"),
   StaffControllers.updateStaffMember,
 );
+router.post(
+  "/:id/status",
+  Authorize("staff:status"),
+  StaffControllers.updateStaffStatus,
+);
 router.delete(
   "/:id",
   Authorize("staff:delete"),
