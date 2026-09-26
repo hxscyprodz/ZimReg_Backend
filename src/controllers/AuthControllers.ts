@@ -45,9 +45,8 @@ class AuthControllers {
         throw new BadRequestError("Invalid credentials");
       }
 
-      const { user, accessToken, refreshToken } = await AuthServices.loginUser(
-        isValidRequestBody.data,
-      );
+      const { user, accessToken, refreshToken, platform } =
+        await AuthServices.loginUser(isValidRequestBody.data);
 
       Cookies.setCookies(res, accessToken, refreshToken);
 
@@ -55,6 +54,7 @@ class AuthControllers {
         success: true,
         message: "User logged in successfully",
         user,
+        platform,
       });
     } catch (error) {
       logger.error(

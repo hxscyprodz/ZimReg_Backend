@@ -47,6 +47,8 @@ export enum ESex {
   FEMALE = "FEMALE",
 }
 
+export type TPlatforms = "registrar-portal" | "citizen-portal";
+
 export interface IUser {
   id: string;
   userId: string;
@@ -56,6 +58,7 @@ export interface IUser {
   surname: string;
   nationalIdNumber: string;
   permissions: string[];
+  platform: TPlatforms;
   roles: string[];
   staffId?: string;
   station?: string;

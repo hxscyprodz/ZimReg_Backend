@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify, JWTVerifyResult } from "jose";
 import { config } from "../config/envConfig";
-import { IUser } from "../types/types";
+import { IUser, TPlatforms } from "../types/types";
 
 interface ITokenPayload {
   id: string;
@@ -8,6 +8,7 @@ interface ITokenPayload {
   email: string;
   roles: string[];
   permissions: string[];
+  platform: TPlatforms;
 }
 
 const ACCESS_TOKEN_SECRET = new TextEncoder().encode(
