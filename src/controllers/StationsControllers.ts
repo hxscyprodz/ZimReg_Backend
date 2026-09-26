@@ -60,7 +60,15 @@ class StationsControllers {
 
   static async getStations(req: Request, res: Response, next: NextFunction) {
     try {
-      const { stations } = await StationsServices.getStations();
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string, 10)
+        : 10;
+
+      const { stations, pagination } = await StationsServices.getStations(
+        page,
+        limit,
+      );
       if (stations.length < 1) {
         return res.status(StatusCodes.OK).json({
           success: true,
@@ -74,7 +82,7 @@ class StationsControllers {
         success: true,
         message: "Stations retrieved successfully",
         stations,
-        count: stations.length,
+        pagination,
       });
     } catch (error) {
       logger.error(

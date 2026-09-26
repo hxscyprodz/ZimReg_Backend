@@ -1,6 +1,6 @@
 import { Stations, Districts } from "../db/schemas";
 import { db } from "../config/db";
-import { and, eq, ilike, ne } from "drizzle-orm";
+import { and, eq, ilike, ne, count } from "drizzle-orm";
 import {
   EResourceStatus,
   TCreateStationPayload,
@@ -98,7 +98,16 @@ class StationsServices {
     };
   }
 
-  static async getStations() {
+  static async getStations(pageNumber: number, limitNumber: number) {
+    const page = pageNumber && pageNumber > 0 ? pageNumber : 1;
+    const limit = limitNumber && limitNumber > 0 ? limitNumber : 10;
+    const offset = (page - 1) * limit;
+
+    const [totalResult] = await db.select({ count: count() }).from(Stations);
+
+    const totalItems = Number(totalResult?.count);
+    const totalPages = Math.ceil(totalItems / limit);
+
     const stations = await db
       .select({
         id: Stations.id,
@@ -115,10 +124,20 @@ class StationsServices {
       .from(Stations)
       .innerJoin(Districts, eq(Districts.id, Stations.district))
       .where(ne(Stations.status, EResourceStatus.DELETED))
-      .orderBy(Stations.name);
+      .orderBy(Stations.name)
+      .offset(offset)
+      .limit(limit);
 
     return {
       stations,
+      pagination: {
+        totalItems,
+        totalPages,
+        currentPage: page,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+        limit,
+      },
     };
   }
 
