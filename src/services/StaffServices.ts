@@ -465,7 +465,12 @@ class StaffServices {
         nationalIdNumber: StaffMembers.nationalIdNumber,
       })
       .from(StaffMembers)
-      .where(eq(StaffMembers.id, payload.staffId))
+      .where(
+        and(
+          eq(StaffMembers.id, payload.staffId),
+          ne(StaffMembers.status, "DELETED"),
+        ),
+      )
       .limit(1);
     if (!isStaffMemberAvailable) {
       throw new NotFoundError("Staff member doesn't exist");
