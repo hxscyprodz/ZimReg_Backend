@@ -209,7 +209,10 @@ class AuthServices {
       }
 
       const { accessToken, refreshToken } = await generateAndSaveTokens({
-        safeUser,
+        safeUser: {
+          ...safeUser,
+          ...isStaffMember,
+        },
         platform,
         password: payload.password,
         hashedPassword: user.hashedPassword,
