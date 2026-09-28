@@ -24,47 +24,52 @@ export class WhatsAppService {
   private static sock: any = null;
   private static isConnected = false;
 
-  public static async connectToWhatsApp() {
-    const { state, saveCreds } =
-      await useMultiFileAuthState("auth_info_baileys");
+  public static async connectToWhatsApp(): Promise<void> {
+    return new Promise(async (resolve) => {
+      const { state, saveCreds } =
+        await useMultiFileAuthState("auth_info_baileys");
 
-    WhatsAppService.sock = makeWASocket({
-      auth: state,
-      printQRInTerminal: false,
-      logger: pino({ level: "silent" }),
-    });
+      WhatsAppService.sock = makeWASocket({
+        auth: state,
+        printQRInTerminal: false,
+        logger: pino({ level: "silent" }),
+      });
 
-    WhatsAppService.sock.ev.on(
-      "connection.update",
-      (update: Partial<ConnectionState>) => {
-        const { connection, lastDisconnect, qr } = update;
+      WhatsAppService.sock.ev.on(
+        "connection.update",
+        (update: Partial<ConnectionState>) => {
+          const { connection, lastDisconnect, qr } = update;
 
-        if (qr) {
-          qrcode.generate(qr, { small: true });
-        }
-
-        if (connection === "close") {
-          WhatsAppService.isConnected = false;
-          const shouldReconnect =
-            (lastDisconnect?.error as Boom)?.output?.statusCode !==
-            DisconnectReason.loggedOut;
-
-          logger.warn(
-            `[ ${FLAG}] - Connection closed due to ${lastDisconnect?.error}`,
-          );
-          logger.info(`[ ${FLAG}] - Reconnecting...`);
-
-          if (shouldReconnect) {
-            WhatsAppService.connectToWhatsApp();
+          if (qr) {
+            qrcode.generate(qr, { small: true });
           }
-        } else if (connection === "open") {
-          WhatsAppService.isConnected = true;
-          logger.info(`[ ${FLAG}] - Whatsapp connected successfully`);
-        }
-      },
-    );
 
-    WhatsAppService.sock.ev.on("creds.update", saveCreds);
+          if (connection === "close") {
+            WhatsAppService.isConnected = false;
+            const shouldReconnect =
+              (lastDisconnect?.error as Boom)?.output?.statusCode !==
+              DisconnectReason.loggedOut;
+
+            logger.warn(
+              `[ ${FLAG}] - Connection closed due to ${lastDisconnect?.error}`,
+            );
+            logger.info(`[ ${FLAG}] - Reconnecting...`);
+
+            if (shouldReconnect) {
+              WhatsAppService.connectToWhatsApp();
+            } else {
+              resolve();
+            }
+          } else if (connection === "open") {
+            WhatsAppService.isConnected = true;
+            logger.info(`[ ${FLAG}] - Whatsapp connected successfully`);
+            resolve();
+          }
+        },
+      );
+
+      WhatsAppService.sock.ev.on("creds.update", saveCreds);
+    });
   }
 
   public static async sendMessage(payload: IMessagePayload) {
