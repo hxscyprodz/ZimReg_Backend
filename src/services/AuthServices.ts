@@ -219,7 +219,10 @@ class AuthServices {
       });
 
       return {
-        user: safeUser,
+        user: {
+          ...safeUser,
+          ...isStaffMember,
+        },
         accessToken,
         refreshToken,
         platform,
