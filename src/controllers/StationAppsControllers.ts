@@ -49,6 +49,44 @@ class StationApplicationsControllers {
     }
   }
 
+  static async getApprovedApplications(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const station = req.user?.station;
+      const isPrintCenter = Boolean(req.query?.print_center === "true");
+
+      if (!station) {
+        throw new ForbiddenError("Not authorized to perform this action");
+      }
+
+      const page = Math.min(1, Number(req.query?.page));
+      const limit = Math.min(100, Math.max(1, Number(req.query?.limit) || 10));
+
+      const { applications, pagination } =
+        await StationApplicationsServices.getApprovedApplications({
+          station: station!,
+          page,
+          limit,
+          isPrintCenter,
+        });
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Applications retrieved successfully",
+        applications,
+        pagination,
+      });
+    } catch (error) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while retrieving applications: ${error}`,
+      );
+      next(error);
+    }
+  }
+
   static async approveApplication(
     req: RequestWithUser,
     res: Response,

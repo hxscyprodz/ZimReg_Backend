@@ -11,6 +11,11 @@ router.get(
   Authorize("application:read"),
   StationApplicationsControllers.getStationApplications,
 );
+router.get(
+  "/approved",
+  Authorize("application:read"),
+  StationApplicationsControllers.getApprovedApplications,
+);
 router.post(
   "/reject/:id",
   Authorize("application:reject"),
