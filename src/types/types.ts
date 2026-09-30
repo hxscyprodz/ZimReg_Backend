@@ -181,3 +181,13 @@ export type TTransaction = PgTransaction<
   Record<string, never>,
   ExtractTablesWithRelations<Record<string, never>>
 >;
+
+export interface IPaginationPayload {
+  limit: number;
+  page: number;
+}
+
+export interface IApprovedApplicationsPayload extends IPaginationPayload {
+  station: string;
+  isPrintCenter: boolean;
+}
