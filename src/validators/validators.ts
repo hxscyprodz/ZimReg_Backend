@@ -96,6 +96,42 @@ export const CreateBirthCertificateApplication = z.object({
   fatherIdImageUrl: z.url().optional(),
 });
 
+export const DocumentValidationSchema = z.object({
+  isValid: z
+    .boolean()
+    .describe(
+      "True only if it is clear, fully visible, and a valid Zimbabwean document matching one of the expected types.",
+    ),
+  documentType: z
+    .enum([
+      "ZIMBABWE_NATIONAL_ID",
+      "ZIMBABWE_BIRTH_CERTIFICATE",
+      "ZIMBABWE_HOSPITAL_BIRTH_RECORD",
+      "UNKNOWN_OR_INVALID",
+    ])
+    .describe("The classified type of the document."),
+  isClear: z
+    .boolean()
+    .describe(
+      "True if the image is clear, fully visible, well-lit, and completely legible.",
+    ),
+  isZimbabweanDocument: z
+    .boolean()
+    .describe(
+      "True if it matches authentic Zimbabwean civil document markers.",
+    ),
+  confidenceScore: z
+    .number()
+    .min(0.0)
+    .max(1.0)
+    .describe("A confidence rating between 0.0 and 1.0."),
+  reason: z
+    .string()
+    .describe(
+      "A concise explanation of any issues found, e.g., 'Image is too blurry' or 'Not a recognized Zimbabwean document'",
+    ),
+});
+
 export const UpdateHospitalSchema = CreateHospitalSchema.partial();
 export const UpdateDistrictSchema = CreateDistrictSchema.partial();
 export const UpdateStationSchema = CreateStationSchema.partial();
