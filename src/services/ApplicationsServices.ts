@@ -9,7 +9,11 @@ import {
   Hospitals,
   BirthCertificateApplications,
 } from "../db/schemas";
-import { BadRequestError, NotFoundError } from "../errors/errors";
+import {
+  BadRequestError,
+  InternalServerError,
+  NotFoundError,
+} from "../errors/errors";
 import {
   TCreateBirthCertificateApplication,
   TCreateIdApplication,
@@ -19,6 +23,7 @@ import CalculateAge from "../utils/CalculateAge";
 import GenerateIds from "../utils/GenerateID";
 import { alias } from "drizzle-orm/pg-core";
 import messageQueue from "../queues/messageQueue";
+import imageValidationQueue from "../queues/imageValidationQueue";
 
 interface User {
   id: string;
@@ -206,6 +211,16 @@ class ApplicationsServices {
     });
 
     const { newApplication, newIdApplication } = newApplicationTransaction;
+    if (!newApplication) {
+      throw new InternalServerError("Failed to create application");
+    }
+
+    if (!newIdApplication) {
+      await db
+        .delete(Applications)
+        .where(eq(Applications.id, newApplication.id));
+      throw new InternalServerError("Failed to create ID application");
+    }
 
     await messageQueue.queue.add("application-received", {
       type: "application-received",
@@ -213,6 +228,11 @@ class ApplicationsServices {
       username: payload.user.fullName,
       trackingId: newIdApplication?.trackingId,
       stationName: isStationAvailable.name,
+    });
+
+    await imageValidationQueue.queue.add("image-validation", {
+      applicationId: newApplication.id,
+      supabaseImageUrls: [newIdApplication.birthCertificateImageUrl],
     });
 
     return {
@@ -405,6 +425,10 @@ class ApplicationsServices {
           dateOfBirth: BirthCertificateApplications.dateOfBirth,
           placeOfBirth: BirthCertificateApplications.placeOfBirth,
           address: BirthCertificateApplications.address,
+          hospitalRecordImageUrl:
+            BirthCertificateApplications.hospitalRecordImageUrl,
+          motherIdImageUrl: BirthCertificateApplications.motherIdImageUrl,
+          fatherIdImageUrl: BirthCertificateApplications.fatherIdImageUrl,
         });
 
       return {
@@ -414,6 +438,15 @@ class ApplicationsServices {
     });
 
     const { newApplication, birthApplication } = newApplicationTransaction;
+    if (!newApplication) {
+      throw new InternalServerError("Failed to create application");
+    }
+    if (!birthApplication) {
+      await db
+        .delete(Applications)
+        .where(eq(Applications.id, newApplication.id));
+      throw new InternalServerError("Failed to create birth application");
+    }
 
     await messageQueue.queue.add("application-received", {
       type: "application-received",
@@ -421,6 +454,15 @@ class ApplicationsServices {
       username: payload.user.fullName,
       trackingId: newApplication?.trackingId,
       stationName: station.name,
+    });
+
+    await imageValidationQueue.queue.add("image-validation", {
+      applicationId: newApplication.id,
+      supabaseImageUrls: [
+        birthApplication.motherIdImageUrl,
+        birthApplication.fatherIdImageUrl,
+        birthApplication.hospitalRecordImageUrl,
+      ].filter(Boolean) as string[],
     });
 
     return {

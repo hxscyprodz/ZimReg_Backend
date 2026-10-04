@@ -5,6 +5,7 @@ import logger from "./services/LoggerService";
 import { RedisService } from "./services/Redis";
 import WhatsAppService from "./services/WhatsappService";
 import { createMessageWorker } from "./queues/messageWorker";
+import { createImageValidationWorker } from "./queues/imageValidationWorker";
 
 const port = config.PORT;
 
@@ -15,6 +16,8 @@ const startServer = async () => {
     await WhatsAppService.connectToWhatsApp();
     createMessageWorker();
     logger.info("[ MESSAGE-WORKER ] Message worker started");
+    createImageValidationWorker();
+    logger.info("[ IMAGE-VALIDATION-WORKER ] Image validation worker started");
     app.listen(port, () => {
       logger.info(`Server running on port ${port}...`);
     });
