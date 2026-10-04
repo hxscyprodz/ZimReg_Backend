@@ -18,7 +18,7 @@ import {
 import CalculateAge from "../utils/CalculateAge";
 import GenerateIds from "../utils/GenerateID";
 import { alias } from "drizzle-orm/pg-core";
-import WhatsAppService from "./WhatsappService";
+import messageQueue from "../queues/messageQueue";
 
 interface User {
   id: string;
@@ -207,7 +207,7 @@ class ApplicationsServices {
 
     const { newApplication, newIdApplication } = newApplicationTransaction;
 
-    await WhatsAppService.sendMessage({
+    await messageQueue.queue.add("application-received", {
       type: "application-received",
       recipientNumber: payload.user.phoneNumber,
       username: payload.user.fullName,
@@ -415,7 +415,7 @@ class ApplicationsServices {
 
     const { newApplication, birthApplication } = newApplicationTransaction;
 
-    await WhatsAppService.sendMessage({
+    await messageQueue.queue.add("application-received", {
       type: "application-received",
       recipientNumber: payload.user.phoneNumber,
       username: payload.user.fullName,
