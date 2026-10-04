@@ -191,3 +191,8 @@ export interface IApprovedApplicationsPayload extends IPaginationPayload {
   station: string;
   isPrintCenter: boolean;
 }
+
+export interface IImageValidationPayload {
+  applicationId: string;
+  supabaseImageUrls: string[];
+}
