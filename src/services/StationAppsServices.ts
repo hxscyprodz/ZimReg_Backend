@@ -23,7 +23,7 @@ import {
 } from "../types/types";
 import { appointmentScheduler } from "../utils/AppointmentScheduler";
 import { generateNationalIDNumber } from "../utils/NatonalIDNumber";
-import WhatsAppService from "./WhatsappService";
+import messageQueue from "../queues/messageQueue";
 
 class StationApplicationsServices {
   static async getStationApplications(
@@ -305,7 +305,7 @@ class StationApplicationsServices {
       });
     }
 
-    await WhatsAppService.sendMessage({
+    await messageQueue.queue.add("application-approved", {
       type: "application-approved",
       recipientNumber: application.phoneNumber,
       appointmentDate: appointmentDate,
@@ -397,7 +397,7 @@ class StationApplicationsServices {
         updatedAt: Applications.updatedAt,
       });
 
-    await WhatsAppService.sendMessage({
+    await messageQueue.queue.add("application-rejected", {
       type: "application-rejected",
       recipientNumber: application.phoneNumber,
       trackingId: rejectedApplication?.trackingId,
