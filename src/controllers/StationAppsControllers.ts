@@ -87,6 +87,42 @@ class StationApplicationsControllers {
     }
   }
 
+  static async getApplicationDetails(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const applicationId = UUIDSchema.safeParse(req.params);
+      const staffId = req.user?.staffId;
+
+      if (!applicationId.success) {
+        throw new BadRequestError("Invalid application ID");
+      }
+
+      if (!staffId) {
+        throw new UnauthorizedError("Not authorized to perform this action");
+      }
+
+      const { application } =
+        await StationApplicationsServices.getApplicationDetails(
+          applicationId.data.id,
+          staffId,
+        );
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Application details retrieved successfully",
+        application,
+      });
+    } catch (error) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while retrieving application details: ${error}`,
+      );
+      next(error);
+    }
+  }
+
   static async approveApplication(
     req: RequestWithUser,
     res: Response,
