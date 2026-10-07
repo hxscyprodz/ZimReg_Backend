@@ -25,7 +25,7 @@ Hello ${payload.username},
 
 Your verification code is: *${payload.code}*
 
-This code expires in 10 minutes. Please do not share this code with anyone.`;
+This code expires in 5 minutes. Please do not share this code with anyone.`;
 };
 
 export const applicationReceivedMessage = (

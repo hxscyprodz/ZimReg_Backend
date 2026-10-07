@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import AuthServices from "../services/AuthServices";
 import {
   LoginUserSchema,
+  OTPVerificationSchema,
   RegisterUserSchema,
   UUIDSchema,
 } from "../validators/validators";
@@ -59,6 +60,66 @@ class AuthControllers {
     } catch (error) {
       logger.error(
         `[ ${FLAG}] - An error occurred while logging in user: ${error}`,
+      );
+      next(error);
+    }
+  }
+
+  static async requestPhoneNumberVerification(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const phoneNumber = req.user?.phoneNumber;
+      if (!phoneNumber) {
+        throw new BadRequestError("Invalid credentials");
+      }
+
+      const { message } = await AuthServices.requestPhoneNumberVerification({
+        phoneNumber,
+      });
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message,
+      });
+    } catch (error) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while requesting phone number verification: ${error}`,
+      );
+      next(error);
+    }
+  }
+
+  static async verifyPhoneNumber(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const isValidRequestBody = OTPVerificationSchema.safeParse(req.body);
+      if (!isValidRequestBody.success) {
+        throw new BadRequestError("Invalid credentials");
+      }
+
+      const phoneNumber = req.user?.phoneNumber;
+      if (!phoneNumber) {
+        throw new BadRequestError("Invalid credentials");
+      }
+
+      const { message } = await AuthServices.verifyPhoneNumber({
+        phoneNumber,
+        otp: isValidRequestBody.data.otp,
+      });
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message,
+      });
+    } catch (error) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while verifying phone number: ${error}`,
       );
       next(error);
     }

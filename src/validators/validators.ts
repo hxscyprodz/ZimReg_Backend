@@ -132,6 +132,10 @@ export const DocumentValidationSchema = z.object({
     ),
 });
 
+export const OTPVerificationSchema = z.object({
+  otp: z.string().length(6),
+});
+
 export const UpdateHospitalSchema = CreateHospitalSchema.partial();
 export const UpdateDistrictSchema = CreateDistrictSchema.partial();
 export const UpdateStationSchema = CreateStationSchema.partial();

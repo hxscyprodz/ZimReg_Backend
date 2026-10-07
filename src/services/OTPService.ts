@@ -2,13 +2,13 @@ import crypto from "node:crypto";
 import { redisClient } from "./Redis";
 import { UnauthorizedError } from "../errors/errors";
 
-export interface IOtpPaylaod {
+export interface IOtpPayload {
   userId: string;
   type: "login" | "verification";
   baseKey: string;
 }
 
-export const generateOtp = async (payload: IOtpPaylaod): Promise<string> => {
+export const generateOtp = async (payload: IOtpPayload): Promise<string> => {
   const OTP = crypto.randomInt(100000, 999999).toString();
 
   const durationInSeconds = payload.type == "login" ? 2 * 60 : 5 * 60;
@@ -21,8 +21,15 @@ export const generateOtp = async (payload: IOtpPaylaod): Promise<string> => {
   return OTP;
 };
 
+export const hasPendingOtp = async (payload: IOtpPayload): Promise<boolean> => {
+  const existing = await redisClient.get(
+    `${payload.userId}:${payload.baseKey}-${payload.type}`,
+  );
+  return !!existing;
+};
+
 export const validateOtp = async (
-  payload: IOtpPaylaod & { enteredOtp: string },
+  payload: IOtpPayload & { enteredOtp: string },
 ): Promise<boolean> => {
   const otpInDb = await redisClient.get(
     `${payload.userId}:${payload.baseKey}-${payload.type}`,
