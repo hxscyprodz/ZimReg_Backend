@@ -17,7 +17,7 @@ class ProfileServices {
         nationalIdNumber: Users.nationalIdNumber,
         phoneNumber: Users.phoneNumber,
         email: Users.email,
-        isEmailVerified: Users.isEmailVerified,
+        isEmailVerified: Users.isPhoneNumberVerified,
         status: Users.status,
         createdAt: Users.createdAt,
       })
@@ -61,7 +61,7 @@ class ProfileServices {
         id: Users.id,
         email: Users.email,
         password: Users.password,
-        isEmailVerified: Users.isEmailVerified,
+        isEmailVerified: Users.isPhoneNumberVerified,
       })
       .from(Users)
       .where(eq(Users.id, id))
