@@ -15,6 +15,7 @@ import {
 import GenerateIds from "../utils/GenerateID";
 import {
   BadRequestError,
+  ConflictError,
   NotFoundError,
   UnauthorizedError,
 } from "../errors/errors";
@@ -28,6 +29,8 @@ import {
   setRedisRefreshToken,
 } from "../utils/RefreshToken";
 import { generateAndSaveTokens } from "../utils/LoginTokensHelper";
+import { generateOtp, hasPendingOtp, validateOtp } from "./OTPService";
+import messageQueue from "../queues/messageQueue";
 
 class AuthServices {
   static async registerUser(payload: TRegisterUserPayload) {
@@ -241,6 +244,108 @@ class AuthServices {
       accessToken,
       refreshToken,
       platform,
+    };
+  }
+
+  private static async getUserByPhoneNumber(phoneNumber: string) {
+    const [user] = await db
+      .select({
+        id: Users.id,
+        nationalIdNumber: Users.nationalIdNumber,
+        email: Users.email,
+        phoneNumber: Users.phoneNumber,
+        firstName: BirthCertificates.firstName,
+        surname: BirthCertificates.surname,
+        status: Users.status,
+        createdAt: Users.createdAt,
+        isPhoneNumberVerified: Users.isPhoneNumberVerified,
+      })
+      .from(Users)
+      .innerJoin(
+        BirthCertificates,
+        eq(BirthCertificates.nationalIdNumber, Users.nationalIdNumber),
+      )
+      .where(eq(Users.phoneNumber, phoneNumber))
+      .limit(1);
+    return user ?? null;
+  }
+
+  static async requestPhoneNumberVerification(payload: {
+    phoneNumber: string;
+  }) {
+    const { phoneNumber } = payload;
+
+    const user = await AuthServices.getUserByPhoneNumber(phoneNumber);
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    if (user.isPhoneNumberVerified) {
+      throw new BadRequestError("Phone number already verified");
+    }
+
+    const hasPending = await hasPendingOtp({
+      userId: user.id,
+      type: "verification",
+      baseKey: TAppRedisKeys.verificationOTP,
+    });
+
+    if (hasPending) {
+      throw new BadRequestError(
+        "An OTP has already been sent. Please wait before requesting a new one.",
+      );
+    }
+
+    const otp = await generateOtp({
+      userId: user.id,
+      type: "verification",
+      baseKey: TAppRedisKeys.verificationOTP,
+    });
+
+    await messageQueue.queue.add("whatsappMessage", {
+      recipientNumber: user.phoneNumber,
+      username: `${user.firstName} ${user.surname}`,
+      code: otp,
+      type: "verification",
+    });
+
+    return {
+      message: "OTP sent successfully",
+    };
+  }
+
+  static async verifyPhoneNumber(payload: {
+    phoneNumber: string;
+    otp: string;
+  }) {
+    const { otp, phoneNumber } = payload;
+
+    const user = await AuthServices.getUserByPhoneNumber(phoneNumber);
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    if (user.isPhoneNumberVerified) {
+      throw new BadRequestError("Phone number already verified");
+    }
+
+    await validateOtp({
+      enteredOtp: otp,
+      userId: user.id,
+      type: "verification",
+      baseKey: TAppRedisKeys.verificationOTP,
+    });
+
+    await db
+      .update(Users)
+      .set({
+        isPhoneNumberVerified: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(Users.id, user.id));
+
+    return {
+      message: "Phone number verified successfully",
     };
   }
 

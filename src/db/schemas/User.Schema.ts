@@ -16,6 +16,8 @@ export const Users = pgTable("users", {
   email: varchar("email").notNull().unique(),
   password: varchar("password").notNull(),
   status: userStatus("status").notNull().default("PENDING"),
-  isEmailVerified: boolean("is_email_verified").notNull().default(false),
+  isPhoneNumberVerified: boolean("is_phone_number_verified")
+    .notNull()
+    .default(false),
   ...timestamps,
 });
