@@ -75,7 +75,7 @@ class ApplicationsServices {
         type: Applications.type,
         trackingId: Applications.trackingId,
         status: Applications.status,
-        station: Applications.station,
+        station: Stations.name,
         createdAt: Applications.createdAt,
         details: {
           firstName: BirthCertificates.firstName,
@@ -91,6 +91,7 @@ class ApplicationsServices {
         NationalIDsApplications,
         eq(NationalIDsApplications.trackingId, Applications.trackingId),
       )
+      .innerJoin(Stations, eq(Stations.id, Applications.station))
       .innerJoin(
         BirthCertificates,
         eq(
