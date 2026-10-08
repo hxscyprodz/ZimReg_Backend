@@ -73,6 +73,7 @@ class ApplicationsServices {
         status: Applications.status,
         station: Stations.name,
         createdAt: Applications.createdAt,
+        rejectionReason: Applications.rejectionReason,
         details: {
           firstName: BirthCertificates.firstName,
           surname: BirthCertificates.surname,
@@ -100,6 +101,13 @@ class ApplicationsServices {
 
     if (!application) {
       throw new NotFoundError("Application doesn't exist");
+    }
+
+    if (application.status !== "REJECTED") {
+      const { rejectionReason, ...rest } = application;
+      return {
+        application: rest,
+      };
     }
 
     return {
@@ -271,10 +279,7 @@ class ApplicationsServices {
       throw new NotFoundError("Application doesn't exist");
     }
 
-    if (
-      application.status === "APPROVED" ||
-      application.status === "COLLECTED"
-    ) {
+    if (application.status !== "REJECTED") {
       throw new BadRequestError("Application cannot be updated");
     }
 
