@@ -26,6 +26,11 @@ router.post(
   Authorize("application:create"),
   ApplicationsControllers.nationalIdApplication,
 );
+router.put(
+  "/id/:id",
+  Authorize("application:update"),
+  ApplicationsControllers.updateNationalIdApplication,
+);
 router.post(
   "/birth",
   Authorize("application:create"),

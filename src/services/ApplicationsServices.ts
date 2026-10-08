@@ -1,4 +1,4 @@
-import { eq, inArray, or, and } from "drizzle-orm";
+import { eq, inArray, and } from "drizzle-orm";
 import { db } from "../config/db";
 import {
   BirthCertificates,
@@ -18,6 +18,8 @@ import {
   TCreateBirthCertificateApplication,
   TCreateIdApplication,
   TAppRedisKeys,
+  IApplicationsUser,
+  IUpdateNationalIdApplicationPayload,
 } from "../types/types";
 import CalculateAge from "../utils/CalculateAge";
 import GenerateIds from "../utils/GenerateID";
@@ -25,18 +27,12 @@ import { alias } from "drizzle-orm/pg-core";
 import messageQueue from "../queues/messageQueue";
 import imageValidationQueue from "../queues/imageValidationQueue";
 
-interface User {
-  id: string;
-  fullName: string;
-  phoneNumber: string;
-}
-
 interface Payload extends TCreateIdApplication {
-  user: User;
+  user: IApplicationsUser;
 }
 
 interface BirthApplicationPayload extends TCreateBirthCertificateApplication {
-  user: User;
+  user: IApplicationsUser;
 }
 
 class ApplicationsServices {
@@ -241,6 +237,156 @@ class ApplicationsServices {
         ...newApplication,
         ...newIdApplication,
       },
+    };
+  }
+
+  static async updateNationalIdApplication(
+    payload: IUpdateNationalIdApplicationPayload,
+  ) {
+    const [application] = await db
+      .select({
+        id: Applications.id,
+        status: Applications.status,
+        user: Applications.user,
+        trackingId: Applications.trackingId,
+        nationalIdNumber: NationalIDsApplications.nationalIdNumber,
+        birthCertificateImageUrl:
+          NationalIDsApplications.birthCertificateImageUrl,
+        stationName: Stations.name,
+      })
+      .from(Applications)
+      .innerJoin(Stations, eq(Stations.id, Applications.station))
+      .innerJoin(
+        NationalIDsApplications,
+        eq(NationalIDsApplications.trackingId, Applications.trackingId),
+      )
+      .where(
+        and(
+          eq(Applications.id, payload.applicationId),
+          eq(Applications.user, payload.user.id),
+        ),
+      )
+      .limit(1);
+    if (!application) {
+      throw new NotFoundError("Application doesn't exist");
+    }
+
+    if (
+      application.status === "APPROVED" ||
+      application.status === "COLLECTED"
+    ) {
+      throw new BadRequestError("Application cannot be updated");
+    }
+
+    if (payload.nationalIdNumber) {
+      //checking if the national id number is the same as the previous one
+      if (payload.nationalIdNumber === application.nationalIdNumber) {
+        throw new BadRequestError(
+          "National ID Number is the same as the previous one",
+        );
+      }
+
+      //checking if the national ID number is registered
+      const [isNationalIdRegistered] = await db
+        .select()
+        .from(BirthCertificates)
+        .where(eq(BirthCertificates.nationalIdNumber, payload.nationalIdNumber))
+        .limit(1);
+      if (!isNationalIdRegistered) {
+        throw new BadRequestError("National ID Number is not registered");
+      }
+
+      //checking if the national ID number already exists
+      const [isNationalIdAvailable] = await db
+        .select()
+        .from(NationalIDs)
+        .where(eq(NationalIDs.nationalIdNumber, payload.nationalIdNumber))
+        .limit(1);
+      if (isNationalIdAvailable) {
+        throw new BadRequestError("National ID Number already exists");
+      }
+
+      //checking if the application with the national id number already exists
+      const [isApplicationAvailable] = await db
+        .select()
+        .from(NationalIDsApplications)
+        .where(
+          eq(
+            NationalIDsApplications.nationalIdNumber,
+            payload.nationalIdNumber,
+          ),
+        )
+        .limit(1);
+      if (isApplicationAvailable) {
+        throw new BadRequestError(
+          "Application with this National ID Number already exists",
+        );
+      }
+    }
+
+    const updateApplicationTransaction = await db.transaction(async (tx) => {
+      const [updatedApplication] = await tx
+        .update(Applications)
+        .set({
+          status: "RESUBMITTED",
+          updatedAt: new Date(),
+        })
+        .where(eq(Applications.id, payload.applicationId))
+        .returning({
+          id: Applications.id,
+          status: Applications.status,
+        });
+
+      const [updatedApplicationDetails] = await tx
+        .update(NationalIDsApplications)
+        .set({
+          birthCertificateImageUrl:
+            payload.birthCertificateImageUrl ||
+            application.birthCertificateImageUrl,
+          nationalIdNumber:
+            payload.nationalIdNumber || application.nationalIdNumber,
+        })
+        .where(eq(NationalIDsApplications.trackingId, application.trackingId))
+        .returning({
+          trackingId: NationalIDsApplications.trackingId,
+          birthCertificateImageUrl:
+            NationalIDsApplications.birthCertificateImageUrl,
+        });
+
+      return {
+        updatedApplication,
+        updatedApplicationDetails,
+      };
+    });
+
+    const { updatedApplication, updatedApplicationDetails } =
+      updateApplicationTransaction;
+    if (!updatedApplication) {
+      throw new InternalServerError("Failed to update application");
+    }
+
+    if (!updatedApplicationDetails) {
+      throw new InternalServerError("Failed to update application details");
+    }
+
+    await messageQueue.queue.add("application-received", {
+      type: "application-received",
+      recipientNumber: payload.user.phoneNumber,
+      username: payload.user.fullName,
+      trackingId: updatedApplicationDetails.trackingId,
+      stationName: application.stationName,
+    });
+
+    if (payload.birthCertificateImageUrl) {
+      await imageValidationQueue.queue.add("image-validation", {
+        applicationId: updatedApplication.id,
+        supabaseImageUrls: [updatedApplicationDetails.birthCertificateImageUrl],
+      });
+    }
+
+    return {
+      application: updatedApplication,
+      applicationDetails: updatedApplicationDetails,
     };
   }
 

@@ -5,6 +5,7 @@ import { Response, NextFunction } from "express";
 import {
   CreateBirthCertificateApplication,
   CreateIdApplication,
+  UpdateNationalIdApplication,
   UUIDSchema,
 } from "../validators/validators";
 import { BadRequestError, UnauthorizedError } from "../errors/errors";
@@ -104,6 +105,53 @@ class ApplicationsControllers {
     } catch (error) {
       logger.error(
         `[ ID-APPLICATION] - An error occurred while creating application: ${error}`,
+      );
+      next(error);
+    }
+  }
+
+  static async updateNationalIdApplication(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const isValidApplicationId = UUIDSchema.safeParse(req.params);
+      if (!isValidApplicationId.success) {
+        throw new BadRequestError("Invalid application ID");
+      }
+
+      const isValidRequestBody = UpdateNationalIdApplication.safeParse(
+        req.body,
+      );
+      if (!isValidRequestBody.success) {
+        throw new BadRequestError("Invalid National ID Application details");
+      }
+
+      const user = {
+        id: req.user?.id!,
+        fullName: `${req.user?.firstName} ${req.user?.surname}`,
+        phoneNumber: req.user?.phoneNumber!,
+      };
+      if (Object.keys(user).length < 3) {
+        throw new BadRequestError("Invalid user credentials");
+      }
+
+      const { application } =
+        await ApplicationsServices.updateNationalIdApplication({
+          user,
+          ...isValidRequestBody.data,
+          applicationId: isValidApplicationId.data.id,
+        });
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Application updated successfully",
+        application,
+      });
+    } catch (error) {
+      logger.error(
+        `[ ID-APPLICATION] - An error occurred while updating application: ${error}`,
       );
       next(error);
     }
