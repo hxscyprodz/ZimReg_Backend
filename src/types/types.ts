@@ -66,6 +66,10 @@ export interface IUser {
   exp: number;
 }
 
+export interface IApplicationsUser extends Pick<IUser, "id" | "phoneNumber"> {
+  fullName: string;
+}
+
 export interface RequestWithUser extends Request {
   user?: IUser;
 }
@@ -195,4 +199,11 @@ export interface IApprovedApplicationsPayload extends IPaginationPayload {
 export interface IImageValidationPayload {
   applicationId: string;
   supabaseImageUrls: string[];
+}
+
+export interface IUpdateNationalIdApplicationPayload extends Partial<
+  Omit<TCreateIdApplication, "station">
+> {
+  user: IApplicationsUser;
+  applicationId: string;
 }

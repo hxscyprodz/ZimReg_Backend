@@ -77,6 +77,8 @@ export const CreateIdApplication = z.object({
   birthCertificateImageUrl: z.url(),
 });
 
+export const UpdateNationalIdApplication = CreateIdApplication.partial();
+
 export const CreateBirthCertificateApplication = z.object({
   firstName: z.string().min(2).max(100),
   middleNames: z.string().min(2).max(100).optional(),
