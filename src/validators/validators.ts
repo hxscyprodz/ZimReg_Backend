@@ -98,6 +98,9 @@ export const CreateBirthCertificateApplication = z.object({
   fatherIdImageUrl: z.url().optional(),
 });
 
+export const UpdateBirthCertificateApplication =
+  CreateBirthCertificateApplication.partial();
+
 export const DocumentValidationSchema = z.object({
   isValid: z
     .boolean()

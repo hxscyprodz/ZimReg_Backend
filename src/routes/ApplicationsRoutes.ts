@@ -36,5 +36,10 @@ router.post(
   Authorize("application:create"),
   ApplicationsControllers.birthCertificateApplication,
 );
+router.put(
+  "/birth/:id",
+  Authorize("application:update"),
+  ApplicationsControllers.updateBirthApplication,
+);
 
 export default router;

@@ -5,6 +5,7 @@ import { Response, NextFunction } from "express";
 import {
   CreateBirthCertificateApplication,
   CreateIdApplication,
+  UpdateBirthCertificateApplication,
   UpdateNationalIdApplication,
   UUIDSchema,
 } from "../validators/validators";
@@ -228,6 +229,56 @@ class ApplicationsControllers {
     } catch (error) {
       logger.error(
         `[ BIRTH-APPLICATION] - An error occurred while creating application`,
+      );
+      next(error);
+    }
+  }
+
+  static async updateBirthApplication(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const isValidApplicationId = UUIDSchema.safeParse(req.params);
+      if (!isValidApplicationId.success) {
+        throw new BadRequestError("Invalid application ID");
+      }
+
+      const isValidRequestBody = UpdateBirthCertificateApplication.safeParse(
+        req.body,
+      );
+      if (!isValidRequestBody.success) {
+        throw new BadRequestError(
+          "Invalid Birth Certificate Application details",
+        );
+      }
+
+      const user = {
+        id: req.user?.id!,
+        fullName: `${req.user?.firstName} ${req.user?.surname}`,
+        phoneNumber: req.user?.phoneNumber!,
+      };
+      if (Object.keys(user).length < 3) {
+        throw new BadRequestError("Invalid user credentials");
+      }
+
+      const { application } = await ApplicationsServices.updateBirthApplication(
+        {
+          user,
+          ...isValidRequestBody.data,
+          applicationId: isValidApplicationId.data.id,
+        },
+      );
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Application updated successfully",
+        application,
+      });
+    } catch (error) {
+      logger.error(
+        `[ BIRTH-APPLICATION] - An error occurred while updating application: ${error}`,
       );
       next(error);
     }
