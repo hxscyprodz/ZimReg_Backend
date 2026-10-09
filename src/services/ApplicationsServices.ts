@@ -20,6 +20,7 @@ import {
   TAppRedisKeys,
   IApplicationsUser,
   IUpdateNationalIdApplicationPayload,
+  IUpdateBirthApplication,
 } from "../types/types";
 import CalculateAge from "../utils/CalculateAge";
 import GenerateIds from "../utils/GenerateID";
@@ -621,6 +622,167 @@ class ApplicationsServices {
       application: {
         ...newApplication,
         ...birthApplication,
+      },
+    };
+  }
+
+  static async updateBirthApplication(payload: IUpdateBirthApplication) {
+    const { user, applicationId, ...updateData } = payload;
+
+    //checking if the update data had values
+    if (Object.keys(updateData).length === 0) {
+      throw new BadRequestError("No update data provided");
+    }
+
+    //cleaning up null values
+    const cleanUpdateData = Object.fromEntries(
+      Object.entries(updateData).filter(([_, v]) => v !== undefined),
+    );
+
+    const [application] = await db
+      .select({
+        id: Applications.id,
+        trackingId: Applications.trackingId,
+        status: Applications.status,
+        firstName: BirthCertificateApplications.firstName,
+        middleNames: BirthCertificateApplications.middleNames,
+        surname: BirthCertificateApplications.surname,
+        sex: BirthCertificateApplications.sex,
+        placeOfBirth: BirthCertificateApplications.placeOfBirth,
+        villageOfOrigin: BirthCertificateApplications.villageOfOrigin,
+        districtOfOrigin: BirthCertificateApplications.districtOfOrigin,
+        dateOfBirth: BirthCertificateApplications.dateOfBirth,
+        address: BirthCertificateApplications.address,
+        hospital: BirthCertificateApplications.hospital,
+        motherIdNumber: BirthCertificateApplications.motherIdNumber,
+        fatherIdNumber: BirthCertificateApplications.fatherIdNumber,
+        hospitalRecordImageUrl:
+          BirthCertificateApplications.hospitalRecordImageUrl,
+        motherIdImageUrl: BirthCertificateApplications.motherIdImageUrl,
+        fatherIdImageUrl: BirthCertificateApplications.fatherIdImageUrl,
+        stationName: Stations.name,
+      })
+      .from(Applications)
+      .innerJoin(Stations, eq(Stations.id, Applications.station))
+      .innerJoin(
+        BirthCertificateApplications,
+        eq(BirthCertificateApplications.trackingId, Applications.trackingId),
+      )
+      .where(
+        and(
+          eq(Applications.id, payload.applicationId),
+          //ensures (IDOR) allowing only the users to get the application
+          eq(Applications.user, payload.user.id),
+        ),
+      )
+      .limit(1);
+    if (!application) {
+      throw new NotFoundError("Application not found");
+    }
+
+    //checking if the values provided match the ones in the database
+    const hasChanges = Object.entries(cleanUpdateData).some(
+      ([key, value]) => application[key as keyof typeof application] !== value,
+    );
+
+    if (!hasChanges) {
+      throw new BadRequestError("No changes found in the application");
+    }
+
+    //only allow REJECTED applications to be edited
+    if (application.status !== "REJECTED") {
+      throw new BadRequestError("Application can only be updated if rejected");
+    }
+
+    const birthApplicationUpdateTransaction = await db.transaction(
+      async (tx) => {
+        const [updatedApplicationDetails] = await tx
+          .update(BirthCertificateApplications)
+          .set({
+            ...cleanUpdateData,
+          })
+          .where(
+            eq(BirthCertificateApplications.trackingId, application.trackingId),
+          )
+          .returning({
+            id: BirthCertificateApplications.id,
+            trackingId: BirthCertificateApplications.trackingId,
+            firstName: BirthCertificateApplications.firstName,
+            middleNames: BirthCertificateApplications.middleNames,
+            surname: BirthCertificateApplications.surname,
+            sex: BirthCertificateApplications.sex,
+            placeOfBirth: BirthCertificateApplications.placeOfBirth,
+            villageOfOrigin: BirthCertificateApplications.villageOfOrigin,
+            districtOfOrigin: BirthCertificateApplications.districtOfOrigin,
+            dateOfBirth: BirthCertificateApplications.dateOfBirth,
+            address: BirthCertificateApplications.address,
+            hospital: BirthCertificateApplications.hospital,
+            motherIdNumber: BirthCertificateApplications.motherIdNumber,
+            fatherIdNumber: BirthCertificateApplications.fatherIdNumber,
+            hospitalRecordImageUrl:
+              BirthCertificateApplications.hospitalRecordImageUrl,
+            motherIdImageUrl: BirthCertificateApplications.motherIdImageUrl,
+            fatherIdImageUrl: BirthCertificateApplications.fatherIdImageUrl,
+          });
+
+        if (!updatedApplicationDetails) {
+          throw new InternalServerError("Failed to update application");
+        }
+
+        const [updatedApplication] = await tx
+          .update(Applications)
+          .set({
+            updatedAt: new Date(),
+            status: "RESUBMITTED",
+          })
+          .where(eq(Applications.id, application.id))
+          .returning({
+            id: Applications.id,
+            status: Applications.status,
+            updatedAt: Applications.updatedAt,
+          });
+
+        if (!updatedApplication) {
+          throw new InternalServerError("Failed to update application");
+        }
+
+        await messageQueue.queue.add("application-received", {
+          type: "application-received",
+          recipientNumber: payload.user.phoneNumber,
+          username: payload.user.fullName,
+          trackingId: updatedApplicationDetails.trackingId,
+          stationName: application.stationName,
+        });
+
+        if (
+          payload.fatherIdImageUrl ||
+          payload.motherIdImageUrl ||
+          payload.hospitalRecordImageUrl
+        ) {
+          await imageValidationQueue.queue.add("image-validation", {
+            applicationId: application.id,
+            supabaseImageUrls: [
+              payload.motherIdImageUrl,
+              payload.fatherIdImageUrl,
+              payload.hospitalRecordImageUrl,
+            ].filter(Boolean) as string[],
+          });
+        }
+
+        return {
+          updatedApplication,
+          updatedApplicationDetails,
+        };
+      },
+    );
+
+    const { updatedApplication, updatedApplicationDetails } =
+      birthApplicationUpdateTransaction;
+
+    return {
+      application: {
+        ...updatedApplication,
+        ...updatedApplicationDetails,
       },
     };
   }

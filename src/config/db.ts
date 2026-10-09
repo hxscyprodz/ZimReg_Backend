@@ -11,6 +11,9 @@ export const pool = new Pool({
   connectionTimeoutMillis: CONNECTION_TIMEOUT,
   idleTimeoutMillis: IDLE_TIMEOUT,
   max: MAX,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 export const db = drizzle({ client: pool });

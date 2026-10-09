@@ -40,4 +40,3 @@ class BullMqQueue<DataType = any> {
 }
 
 export default BullMqQueue;
-

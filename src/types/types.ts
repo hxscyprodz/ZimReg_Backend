@@ -207,3 +207,8 @@ export interface IUpdateNationalIdApplicationPayload extends Partial<
   user: IApplicationsUser;
   applicationId: string;
 }
+
+export interface IUpdateBirthApplication extends Partial<TCreateBirthCertificateApplication> {
+  user: IApplicationsUser;
+  applicationId: string;
+}
