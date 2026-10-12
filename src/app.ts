@@ -16,6 +16,7 @@ import StationsRoutes from "./routes/StationsRoutes";
 import HospitalRoutes from "./routes/HospitalsRoutes";
 import StationAppsRoutes from "./routes/StationAppsRoutes";
 import RolesRoutes from "./routes/RolesRoutes";
+import HealthCheckRoutes from "./routes/HealthChechRoutes";
 import { ForbiddenError } from "./errors/errors";
 
 export const app = express();
@@ -46,6 +47,7 @@ app.use(morgan(config.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(cors(corsOptions));
 app.use(cookieParser());
 
+app.use("/api/v1/health", HealthCheckRoutes);
 app.use("/api/v1/auth", AuthRoutes);
 app.use("/api/v1/profile", Authenticate, ProfileRoutes);
 app.use("/api/v1/staff", StaffRoutes);
