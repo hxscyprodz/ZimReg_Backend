@@ -11,6 +11,9 @@ const port = config.PORT;
 
 const startServer = async () => {
   try {
+    app.listen(port, () => {
+      logger.info(`Server running on port ${port}...`);
+    });
     await Postgres.connectDB();
     await RedisService.getInstance().connect();
     await WhatsAppService.connectToWhatsApp();
@@ -18,9 +21,6 @@ const startServer = async () => {
     logger.info("[ MESSAGE-WORKER ] Message worker started");
     createImageValidationWorker();
     logger.info("[ IMAGE-VALIDATION-WORKER ] Image validation worker started");
-    app.listen(port, () => {
-      logger.info(`Server running on port ${port}...`);
-    });
   } catch (error: any) {
     logger.error(`An error occurred while starting server: ${error?.message}`);
     process.exit();
