@@ -1,5 +1,5 @@
 import { db } from "../config/db";
-import { count, eq, and } from "drizzle-orm";
+import { count, eq, and, inArray } from "drizzle-orm";
 import {
   Applications,
   BirthCertificateApplications,
@@ -8,6 +8,7 @@ import {
   Hospitals,
   NationalIDs,
   NationalIDsApplications,
+  Schedules,
   StaffMembers,
   Stations,
   Users,
@@ -628,6 +629,116 @@ class StationApplicationsServices {
     return {
       application: rejectedApplication,
     };
+  }
+
+  /**
+   * Retrieve appointments (applications with a linked schedule) for today and
+   * tomorrow, scoped strictly to the requesting staff member's station.
+   *
+   * Station isolation: the station UUID is taken directly from the authenticated
+   * user's JWT (`req.user.station`). Any application whose schedule date falls
+   * outside [today, tomorrow] or belongs to a different station is excluded.
+   *
+   * Returns: `{ today: Appointment[], tomorrow: Appointment[] }`
+   */
+  static async getStationAppointments(station: string) {
+    // Compute today and tomorrow as ISO date strings (YYYY-MM-DD) in the
+    // server's local timezone so the comparison aligns with the `date` column.
+    const todayDate = new Date();
+    const tomorrowDate = new Date(todayDate);
+    tomorrowDate.setDate(todayDate.getDate() + 1);
+
+    const toDateString = (d: Date): string =>
+      d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+    const todayStr = toDateString(todayDate);
+    const tomorrowStr = toDateString(tomorrowDate);
+
+    // Fetch all schedule slots for this station that fall on today or tomorrow.
+    const scheduleSlots = await db
+      .select({ id: Schedules.id, date: Schedules.date })
+      .from(Schedules)
+      .where(
+        and(
+          eq(Schedules.station, station),
+          inArray(Schedules.date, [todayStr, tomorrowStr]),
+        ),
+      );
+
+    if (scheduleSlots.length === 0) {
+      return { today: [], tomorrow: [] };
+    }
+
+    const scheduleIds = scheduleSlots.map((s) => s.id);
+
+    // Build a lookup: schedule UUID → date string for grouping later.
+    const scheduleDateMap = new Map<string, string>(
+      scheduleSlots.map((s) => [s.id, s.date]),
+    );
+
+    // Fetch all applications linked to those schedule slots.
+    const rows = await db
+      .select({
+        id: Applications.id,
+        trackingId: Applications.trackingId,
+        type: Applications.type,
+        status: Applications.status,
+        createdAt: Applications.createdAt,
+        appointmentDate: Applications.appointmentDate,
+        firstName: BirthCertificates.firstName,
+        surname: BirthCertificates.surname,
+      })
+      .from(Applications)
+      .innerJoin(Users, eq(Users.id, Applications.user))
+      .innerJoin(
+        BirthCertificates,
+        eq(BirthCertificates.nationalIdNumber, Users.nationalIdNumber),
+      )
+      .where(
+        and(
+          eq(Applications.station, station),
+          inArray(Applications.appointmentDate, scheduleIds),
+        ),
+      )
+      .orderBy(Applications.createdAt);
+
+    // Shape each row and group by date.
+    type AppointmentItem = {
+      id: string;
+      trackingId: string;
+      applicantName: string;
+      type: string;
+      status: string;
+      appointmentDate: string | null;
+      createdAt: Date;
+    };
+
+    const today: AppointmentItem[] = [];
+    const tomorrow: AppointmentItem[] = [];
+
+    for (const row of rows) {
+      const scheduleDate = row.appointmentDate
+        ? scheduleDateMap.get(row.appointmentDate) ?? null
+        : null;
+
+      const item: AppointmentItem = {
+        id: row.id,
+        trackingId: row.trackingId,
+        applicantName: `${row.firstName} ${row.surname}`.trim(),
+        type: row.type,
+        status: row.status,
+        appointmentDate: scheduleDate,
+        createdAt: row.createdAt,
+      };
+
+      if (scheduleDate === todayStr) {
+        today.push(item);
+      } else if (scheduleDate === tomorrowStr) {
+        tomorrow.push(item);
+      }
+    }
+
+    return { today, tomorrow };
   }
 }
 
