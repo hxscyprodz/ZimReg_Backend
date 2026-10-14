@@ -99,13 +99,35 @@ class StationApplicationsControllers {
         throw new ForbiddenError("Not authorized to perform this action");
       }
 
-      const { today, tomorrow } =
-        await StationApplicationsServices.getStationAppointments(station);
+      // Resolve the target date: use the ?date query param if provided,
+      // otherwise fall back to today (server local time).
+      const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+      const rawDate = req.query?.date as string | undefined;
+
+      let targetDate: string;
+
+      if (rawDate) {
+        if (!ISO_DATE_RE.test(rawDate) || isNaN(Date.parse(rawDate))) {
+          throw new BadRequestError(
+            "Invalid date format. Expected YYYY-MM-DD (e.g. 2026-10-14)",
+          );
+        }
+        targetDate = rawDate;
+      } else {
+        targetDate = new Date().toISOString().slice(0, 10);
+      }
+
+      const { date, appointments } =
+        await StationApplicationsServices.getStationAppointments(
+          station,
+          targetDate,
+        );
 
       return res.status(StatusCodes.OK).json({
         success: true,
         message: "Appointments retrieved successfully",
-        appointments: { today, tomorrow },
+        date,
+        appointments,
       });
     } catch (error) {
       logger.error(
@@ -114,6 +136,7 @@ class StationApplicationsControllers {
       next(error);
     }
   }
+
 
   static async getApplicationDetails(
     req: RequestWithUser,
