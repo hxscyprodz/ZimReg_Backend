@@ -17,6 +17,11 @@ router.get(
   StationApplicationsControllers.getApprovedApplications,
 );
 router.get(
+  "/appointments",
+  Authorize("appointment:read"),
+  StationApplicationsControllers.getStationAppointments,
+);
+router.get(
   "/:id",
   Authorize("application:read"),
   StationApplicationsControllers.getApplicationDetails,

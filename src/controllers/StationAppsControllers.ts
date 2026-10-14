@@ -87,6 +87,34 @@ class StationApplicationsControllers {
     }
   }
 
+  static async getStationAppointments(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const station = req.user?.station;
+
+      if (!station) {
+        throw new ForbiddenError("Not authorized to perform this action");
+      }
+
+      const { today, tomorrow } =
+        await StationApplicationsServices.getStationAppointments(station);
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Appointments retrieved successfully",
+        appointments: { today, tomorrow },
+      });
+    } catch (error) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while retrieving appointments: ${error}`,
+      );
+      next(error);
+    }
+  }
+
   static async getApplicationDetails(
     req: RequestWithUser,
     res: Response,
