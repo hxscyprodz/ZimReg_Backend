@@ -16,11 +16,11 @@ const startServer = async () => {
     });
     await Postgres.connectDB();
     await RedisService.getInstance().connect();
-    await WhatsAppService.connectToWhatsApp();
     createMessageWorker();
     logger.info("[ MESSAGE-WORKER ] Message worker started");
     createImageValidationWorker();
     logger.info("[ IMAGE-VALIDATION-WORKER ] Image validation worker started");
+    await WhatsAppService.connectToWhatsApp();
   } catch (error: any) {
     logger.error(`An error occurred while starting server: ${error?.message}`);
     process.exit();

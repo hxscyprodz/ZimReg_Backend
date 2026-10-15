@@ -2,11 +2,18 @@ import { Queue, QueueOptions } from "bullmq";
 import { config } from "../config/envConfig";
 import logger from "./LoggerService";
 
+const redisUrl =
+  config.REDIS_URL ||
+  `redis://${config.REDIS_HOST || "localhost"}:${config.REDIS_HOST_PORT || 6379}`;
+
 export const redisConnection = {
-  host: config.REDIS_HOST,
-  port: config.REDIS_HOST_PORT,
+  url: redisUrl, //Passing it to 'url' lets ioredis parse the protocol, host, and port correctly
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
+  // Automatically apply TLS if your URL starts with rediss://
+  tls: redisUrl.startsWith("rediss://")
+    ? { rejectUnauthorized: false }
+    : undefined,
 };
 
 class BullMqQueue<DataType = any> {
