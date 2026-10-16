@@ -5,6 +5,7 @@ import {
   CreateStationSchema,
   UpdateStationSchema,
   UUIDSchema,
+  ManualBirthCertificateSchema,
 } from "../validators/validators";
 import { BadRequestError } from "../errors/errors";
 import { StatusCodes } from "../types/types";
@@ -143,6 +144,34 @@ class StationsControllers {
     } catch (error) {
       logger.error(
         `[ ${FLAG} ] - An error occurred while deleting station: ${error}`,
+      );
+      next(error);
+    }
+  }
+
+  static async addBirthCertificate(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const isValidBody = ManualBirthCertificateSchema.safeParse(req.body);
+      if (!isValidBody.success) {
+        throw new BadRequestError("Invalid birth certificate details");
+      }
+
+      const { birthCertificate } = await StationsServices.addBirthCertificate(
+        isValidBody.data,
+      );
+
+      return res.status(StatusCodes.CREATED).json({
+        success: true,
+        message: "Birth certificate added successfully",
+        birthCertificate,
+      });
+    } catch (error) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while adding birth certificate: ${error}`,
       );
       next(error);
     }

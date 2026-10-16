@@ -101,6 +101,25 @@ export const CreateBirthCertificateApplication = z.object({
 export const UpdateBirthCertificateApplication =
   CreateBirthCertificateApplication.partial();
 
+export const ManualBirthCertificateSchema = z.object({
+  firstName: z.string().min(2).max(100),
+  middleNames: z.string().min(2).max(100).optional(),
+  surname: z.string().min(2).max(100),
+  nationalIdNumber: z.string().min(13).max(14),
+  sex: z.nativeEnum(ESex),
+  dateOfBirth: z.string().length(10),
+  motherIdNumber: z.string().length(14).optional().nullable(),
+  fatherIdNumber: z.string().length(14).optional().nullable(),
+  placeOfBirth: z.string().min(2).max(100),
+  villageOfOrigin: z.string().min(2).max(100),
+  address: z.string().min(10).max(255),
+  hospital: z.uuid(),
+  placeOfIssue: z.uuid(),
+  issuedBy: z.uuid().optional().nullable(),
+  dateOfIssue: z.string().length(10).optional().nullable(),
+  dateOfRegistration: z.string().length(10).optional(),
+});
+
 export const DocumentValidationSchema = z.object({
   isValid: z
     .boolean()
