@@ -1,14 +1,121 @@
-import { Stations, Districts } from "../db/schemas";
+import { Stations, Districts, BirthCertificates, Hospitals } from "../db/schemas";
 import { db } from "../config/db";
 import { and, eq, ilike, ne, count } from "drizzle-orm";
 import {
   EResourceStatus,
   TCreateStationPayload,
   TUpdateStationPayload,
+  TManualBirthCertificatePayload,
 } from "../types/types";
 import { BadRequestError, NotFoundError } from "../errors/errors";
 
 class StationsServices {
+  /**
+   * Manually add a pre-existing birth certificate record to the database.
+   *
+   * Used by registry staff to digitise historical paper-based birth
+   * certificates that were never captured electronically.
+   *
+   * Business rules:
+   *  - `nationalIdNumber` must be unique — throws `BadRequestError` if it
+   *    already exists.
+   *  - `hospital` and `placeOfIssue` must reference active records.
+   *  - `motherIdNumber`, `fatherIdNumber`, and `issuedBy` are optional/nullable.
+   */
+  static async addBirthCertificate(payload: TManualBirthCertificatePayload) {
+    // 1. Verify hospital exists.
+    const [hospital] = await db
+      .select({ id: Hospitals.id })
+      .from(Hospitals)
+      .where(
+        and(
+          eq(Hospitals.id, payload.hospital),
+          ne(Hospitals.status, EResourceStatus.DELETED),
+        ),
+      )
+      .limit(1);
+
+    if (!hospital) {
+      throw new NotFoundError("Hospital doesn't exist");
+    }
+
+    // 2. Verify placeOfIssue (station) exists.
+    const [placeOfIssue] = await db
+      .select({ id: Stations.id })
+      .from(Stations)
+      .where(
+        and(
+          eq(Stations.id, payload.placeOfIssue),
+          ne(Stations.status, EResourceStatus.DELETED),
+        ),
+      )
+      .limit(1);
+
+    if (!placeOfIssue) {
+      throw new NotFoundError("Place of issue (station) doesn't exist");
+    }
+
+    // 3. Check for duplicate nationalIdNumber.
+    const [existing] = await db
+      .select({ id: BirthCertificates.id })
+      .from(BirthCertificates)
+      .where(eq(BirthCertificates.nationalIdNumber, payload.nationalIdNumber))
+      .limit(1);
+
+    if (existing) {
+      throw new BadRequestError(
+        "A birth certificate with this national ID number already exists",
+      );
+    }
+
+    // 4. Insert the birth certificate record.
+    const [newCertificate] = await db
+      .insert(BirthCertificates)
+      .values({
+        firstName: payload.firstName,
+        middleNames: payload.middleNames,
+        surname: payload.surname,
+        nationalIdNumber: payload.nationalIdNumber,
+        sex: payload.sex,
+        dateOfBirth: payload.dateOfBirth,
+        mother: payload.motherIdNumber ?? "UNKNOWN",
+        father: payload.fatherIdNumber ?? "UNKNOWN",
+        placeOfBirth: payload.placeOfBirth,
+        villageOfOrigin: payload.villageOfOrigin,
+        address: payload.address,
+        hospital: payload.hospital,
+        placeOfIssue: payload.placeOfIssue,
+        issuedBy: payload.issuedBy ?? null,
+        dateOfIssue: payload.dateOfIssue ?? null,
+        ...(payload.dateOfRegistration && {
+          dateOfRegistration: payload.dateOfRegistration,
+        }),
+      })
+      .returning({
+        id: BirthCertificates.id,
+        firstName: BirthCertificates.firstName,
+        middleNames: BirthCertificates.middleNames,
+        surname: BirthCertificates.surname,
+        nationalIdNumber: BirthCertificates.nationalIdNumber,
+        sex: BirthCertificates.sex,
+        dateOfBirth: BirthCertificates.dateOfBirth,
+        mother: BirthCertificates.mother,
+        father: BirthCertificates.father,
+        placeOfBirth: BirthCertificates.placeOfBirth,
+        villageOfOrigin: BirthCertificates.villageOfOrigin,
+        address: BirthCertificates.address,
+        hospital: BirthCertificates.hospital,
+        placeOfIssue: BirthCertificates.placeOfIssue,
+        issuedBy: BirthCertificates.issuedBy,
+        dateOfIssue: BirthCertificates.dateOfIssue,
+        dateOfRegistration: BirthCertificates.dateOfRegistration,
+        createdAt: BirthCertificates.createdAt,
+      });
+
+    return {
+      birthCertificate: newCertificate,
+    };
+  }
   static async createStation(payload: TCreateStationPayload) {
     const [district] = await db
       .select()

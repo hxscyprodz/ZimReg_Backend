@@ -11,6 +11,11 @@ router.post(
   Authorize("station:create"),
   StationsControllers.createStation,
 );
+router.post(
+  "/birth-certificates",
+  Authorize("birth-certificate:create"),
+  StationsControllers.addBirthCertificate,
+);
 router.get("/:id", Authorize("station:read"), StationsControllers.getStation);
 router.get("/", StationsControllers.getStations);
 router.put(

@@ -13,6 +13,7 @@ import {
   CreateIdApplication,
   CreateBirthCertificateApplication,
   RegisterStaffWithUser,
+  ManualBirthCertificateSchema,
 } from "../validators/validators";
 import { applicationStatus } from "../db/Columns.Helper";
 import { Applications } from "../db/schemas";
@@ -96,6 +97,7 @@ export type TCreateBirthCertificateApplication = z.infer<
   typeof CreateBirthCertificateApplication
 >;
 export type TRegisterStaffMemberPayload = z.infer<typeof RegisterStaffWithUser>;
+export type TManualBirthCertificatePayload = z.infer<typeof ManualBirthCertificateSchema>;
 
 export interface IMessagePayload {
   recipientNumber: string;
