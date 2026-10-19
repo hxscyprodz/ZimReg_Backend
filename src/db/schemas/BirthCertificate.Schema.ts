@@ -29,6 +29,7 @@ export const BirthCertificates = pgTable(
     issuedBy: uuid("issued_by"),
     dateOfIssue: date("date_of_issue"),
     dateOfRegistration: date("date_of_registration").notNull().defaultNow(),
+    applicationId: uuid("application_id").unique(),
     ...timestamps,
   },
   (table) => {

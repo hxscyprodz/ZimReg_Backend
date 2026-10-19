@@ -169,20 +169,13 @@ class StationApplicationsServices {
         .from(StaffMembers)
         .innerJoin(
           BirthCertificates,
-          eq(
-            BirthCertificates.nationalIdNumber,
-            StaffMembers.nationalIdNumber,
-          ),
+          eq(BirthCertificates.nationalIdNumber, StaffMembers.nationalIdNumber),
         )
         .where(eq(StaffMembers.id, staffMemberId))
         .limit(1);
 
       if (!record) return null;
-      return [
-        record.firstName,
-        record.middleNames ?? "",
-        record.surname,
-      ]
+      return [record.firstName, record.middleNames ?? "", record.surname]
         .filter(Boolean)
         .join(" ");
     };
@@ -239,9 +232,7 @@ class StationApplicationsServices {
             NationalIDsApplications.birthCertificateImageUrl,
         })
         .from(NationalIDsApplications)
-        .where(
-          eq(NationalIDsApplications.trackingId, application.trackingId),
-        )
+        .where(eq(NationalIDsApplications.trackingId, application.trackingId))
         .limit(1);
 
       if (!idDetails) {
@@ -399,9 +390,9 @@ class StationApplicationsServices {
       );
     }
 
-    if (application.status !== "PENDING_REVIEW") {
+    if (["APPROVED", "REJECTED", "COLLECTED"].includes(application.status)) {
       throw new BadRequestError(
-        "This application was rejected or already approved",
+        "This application has already been processed (approved, rejected, or collected)",
       );
     }
 
@@ -481,6 +472,7 @@ class StationApplicationsServices {
             father: applicationData.fatherIdNumber,
           }),
           placeOfIssue: staffMember.station,
+          applicationId: application.id,
         });
 
         approvedApplication = approvedBirthApplication;
@@ -520,6 +512,7 @@ class StationApplicationsServices {
 
         await tx.insert(NationalIDs).values({
           nationalIdNumber: applicationData.nationalIdNumber,
+          applicationId: application.id,
         });
 
         approvedApplication = approvedIdApplication;
@@ -649,9 +642,7 @@ class StationApplicationsServices {
     const [scheduleSlot] = await db
       .select({ id: Schedules.id, date: Schedules.date })
       .from(Schedules)
-      .where(
-        and(eq(Schedules.station, station), eq(Schedules.date, date)),
-      )
+      .where(and(eq(Schedules.station, station), eq(Schedules.date, date)))
       .limit(1);
 
     // No schedule slot for this date → return an empty list (200 OK).
