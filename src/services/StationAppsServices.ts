@@ -1,4 +1,5 @@
 import { db } from "../config/db";
+import { alias } from "drizzle-orm/pg-core";
 import { count, eq, and } from "drizzle-orm";
 import {
   Applications,
@@ -686,6 +687,165 @@ class StationApplicationsServices {
     }));
 
     return { date: scheduleSlot.date, appointments };
+  }
+
+  static async printApplication(payload: {
+    applicationId: string;
+    staffStation: string;
+    staffId: string;
+  }) {
+    const { applicationId, staffStation, staffId } = payload;
+
+    const [station] = await db
+      .select({ id: Stations.id })
+      .from(Stations)
+      .where(eq(Stations.id, staffStation))
+      .limit(1);
+    if (!station) {
+      throw new NotFoundError("Station not found");
+    }
+
+    const [staffMember] = await db
+      .select({
+        id: StaffMembers.id,
+      })
+      .from(StaffMembers)
+      .where(eq(StaffMembers.staffId, staffId))
+      .limit(1);
+    if (!staffMember) {
+      throw new NotFoundError("Staff member not found");
+    }
+
+    const [application] = await db
+      .select()
+      .from(Applications)
+      .where(
+        and(
+          eq(Applications.id, applicationId),
+          eq(Applications.station, staffStation),
+          eq(Applications.status, "APPROVED"),
+          eq(Applications.isPrinted, false),
+        ),
+      )
+      .limit(1);
+
+    if (!application) {
+      throw new NotFoundError("Application not found");
+    }
+
+    let applicationData: any;
+
+    const mother = alias(BirthCertificates, "mother");
+    const father = alias(BirthCertificates, "father");
+
+    if (application.type === "BIRTH") {
+      await db.transaction(async (tx) => {
+        await tx
+          .update(BirthCertificates)
+          .set({
+            placeOfIssue: station.id,
+            dateOfIssue: new Date().toISOString(),
+            issuedBy: staffMember.id,
+          })
+          .where(eq(BirthCertificates.applicationId, application.id));
+
+        await tx
+          .update(Applications)
+          .set({
+            isPrinted: true,
+            status: "COLLECTED",
+          })
+          .where(eq(Applications.id, application.id));
+      });
+
+      const [data] = await db
+        .select({
+          firstName: BirthCertificates.firstName,
+          middleNames: BirthCertificates.middleNames,
+          surname: BirthCertificates.surname,
+          nationalIdNumber: BirthCertificates.nationalIdNumber,
+          sex: BirthCertificates.sex,
+          dateOfBirth: BirthCertificates.dateOfBirth,
+          mother: {
+            firstName: mother.firstName,
+            surname: mother.surname,
+            nationalIdNumber: mother.nationalIdNumber,
+            birthPlace: mother.placeOfBirth,
+          },
+          father: {
+            firstName: father.firstName,
+            surname: father.surname,
+            nationalIdNumber: father.nationalIdNumber,
+          },
+          placeOfBirth: BirthCertificates.placeOfBirth,
+          villageOfOrigin: BirthCertificates.villageOfOrigin,
+          address: BirthCertificates.address,
+          hospital: Hospitals.name,
+          placeOfIssue: Stations.name,
+          dateOfIssue: BirthCertificates.dateOfIssue,
+          dateOfRegistration: BirthCertificates.dateOfRegistration,
+        })
+        .from(BirthCertificates)
+        .innerJoin(Hospitals, eq(Hospitals.id, BirthCertificates.hospital))
+        .innerJoin(Stations, eq(Stations.id, BirthCertificates.placeOfIssue))
+        .leftJoin(mother, eq(BirthCertificates.mother, mother.nationalIdNumber))
+        .leftJoin(father, eq(BirthCertificates.father, father.nationalIdNumber))
+        .leftJoin(StaffMembers, eq(StaffMembers.id, BirthCertificates.issuedBy))
+        .where(eq(BirthCertificates.applicationId, application.id))
+        .limit(1);
+
+      if (!data) {
+        throw new NotFoundError("Application not found");
+      }
+
+      applicationData = data;
+    } else if (application.type === "ID") {
+      await db.transaction(async (tx) => {
+        await tx
+          .update(NationalIDs)
+          .set({
+            dateOfIssue: new Date().toISOString(),
+            issuedBy: staffMember.id,
+          })
+          .where(eq(NationalIDs.applicationId, application.id));
+
+        await tx
+          .update(Applications)
+          .set({
+            isPrinted: true,
+            status: "COLLECTED",
+          })
+          .where(eq(Applications.id, application.id));
+      });
+
+      const [data] = await db
+        .select({
+          nationalIdNumber: NationalIDs.nationalIdNumber,
+          firstName: BirthCertificates.firstName,
+          surname: BirthCertificates.surname,
+          dateOfBirth: BirthCertificates.dateOfBirth,
+          villageOfOrigin: BirthCertificates.villageOfOrigin,
+          placeOfBirth: BirthCertificates.placeOfBirth,
+          dateOfIssue: NationalIDs.dateOfIssue,
+        })
+        .from(NationalIDs)
+        .innerJoin(
+          BirthCertificates,
+          eq(BirthCertificates.nationalIdNumber, NationalIDs.nationalIdNumber),
+        )
+        .where(eq(NationalIDs.applicationId, application.id))
+        .limit(1);
+
+      if (!data) {
+        throw new NotFoundError("Application not found");
+      }
+
+      applicationData = data;
+    }
+
+    return {
+      application: applicationData,
+    };
   }
 }
 

@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, date } from "drizzle-orm/pg-core";
 import { BirthCertificates } from "./BirthCertificate.Schema";
 
 export const NationalIDs = pgTable("national_ids", {
@@ -9,4 +9,6 @@ export const NationalIDs = pgTable("national_ids", {
     .unique(),
   applicationId: uuid("application_id").unique(),
   imageUrl: varchar("image_url"),
+  dateOfIssue: date("date_of_issue"),
+  issuedBy: uuid("issued_by"),
 });

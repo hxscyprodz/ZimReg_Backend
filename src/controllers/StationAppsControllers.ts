@@ -137,7 +137,6 @@ class StationApplicationsControllers {
     }
   }
 
-
   static async getApplicationDetails(
     req: RequestWithUser,
     res: Response,
@@ -249,6 +248,48 @@ class StationApplicationsControllers {
     } catch (error) {
       logger.error(
         `[ ${FLAG} ] - An error occurred while rejecting application: ${error}`,
+      );
+      next(error);
+    }
+  }
+
+  static async printApplication(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const applicationId = UUIDSchema.safeParse(req.params);
+      const stationId = req.user?.station;
+      const staffId = req.user?.staffId;
+
+      if (!applicationId.success) {
+        throw new BadRequestError("Invalid application ID");
+      }
+
+      if (!stationId) {
+        throw new UnauthorizedError("Not authorized to perform this action");
+      }
+
+      if (!staffId) {
+        throw new UnauthorizedError("Not authorized to perform this action");
+      }
+
+      const { application } =
+        await StationApplicationsServices.printApplication({
+          staffStation: stationId,
+          applicationId: applicationId.data.id,
+          staffId,
+        });
+
+      return res.status(StatusCodes.OK).json({
+        success: true,
+        message: "Application printed successfully",
+        application,
+      });
+    } catch (error) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while printing application: ${error}`,
       );
       next(error);
     }
