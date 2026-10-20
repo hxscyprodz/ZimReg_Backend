@@ -35,6 +35,7 @@ export enum StatusCodes {
   UNAUTHORIZED = 401,
   FORBIDDEN = 403,
   NOT_FOUND = 404,
+  NO_CONTENT = 204,
   INTERNAL_SERVER_ERROR = 500,
 }
 
@@ -97,7 +98,9 @@ export type TCreateBirthCertificateApplication = z.infer<
   typeof CreateBirthCertificateApplication
 >;
 export type TRegisterStaffMemberPayload = z.infer<typeof RegisterStaffWithUser>;
-export type TManualBirthCertificatePayload = z.infer<typeof ManualBirthCertificateSchema>;
+export type TManualBirthCertificatePayload = z.infer<
+  typeof ManualBirthCertificateSchema
+>;
 
 export interface IMessagePayload {
   recipientNumber: string;
