@@ -21,6 +21,7 @@ export const applicationStatus = pgEnum("applications_status", [
   "APPROVED",
   "REJECTED",
   "COLLECTED",
+  "PRINTED",
   "RESUBMITTED",
 ]);
 export const roles = pgEnum("roles", [

@@ -36,6 +36,11 @@ router.post(
   Authorize("application:approve"),
   StationApplicationsControllers.approveApplication,
 );
+router.get(
+  "/print/:id",
+  Authorize("application:read"),
+  StationApplicationsControllers.getPrintingApplication,
+);
 router.post(
   "/print/:id",
   Authorize("application:print"),

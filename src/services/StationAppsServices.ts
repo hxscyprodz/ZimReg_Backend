@@ -689,32 +689,11 @@ class StationApplicationsServices {
     return { date: scheduleSlot.date, appointments };
   }
 
-  static async printApplication(payload: {
+  static async getPrintingApplication(payload: {
     applicationId: string;
     staffStation: string;
-    staffId: string;
   }) {
-    const { applicationId, staffStation, staffId } = payload;
-
-    const [station] = await db
-      .select({ id: Stations.id })
-      .from(Stations)
-      .where(eq(Stations.id, staffStation))
-      .limit(1);
-    if (!station) {
-      throw new NotFoundError("Station not found");
-    }
-
-    const [staffMember] = await db
-      .select({
-        id: StaffMembers.id,
-      })
-      .from(StaffMembers)
-      .where(eq(StaffMembers.staffId, staffId))
-      .limit(1);
-    if (!staffMember) {
-      throw new NotFoundError("Staff member not found");
-    }
+    const { applicationId, staffStation } = payload;
 
     const [application] = await db
       .select()
@@ -739,25 +718,6 @@ class StationApplicationsServices {
     const father = alias(BirthCertificates, "father");
 
     if (application.type === "BIRTH") {
-      await db.transaction(async (tx) => {
-        await tx
-          .update(BirthCertificates)
-          .set({
-            placeOfIssue: station.id,
-            dateOfIssue: new Date().toISOString(),
-            issuedBy: staffMember.id,
-          })
-          .where(eq(BirthCertificates.applicationId, application.id));
-
-        await tx
-          .update(Applications)
-          .set({
-            isPrinted: true,
-            status: "COLLECTED",
-          })
-          .where(eq(Applications.id, application.id));
-      });
-
       const [data] = await db
         .select({
           firstName: BirthCertificates.firstName,
@@ -800,24 +760,6 @@ class StationApplicationsServices {
 
       applicationData = data;
     } else if (application.type === "ID") {
-      await db.transaction(async (tx) => {
-        await tx
-          .update(NationalIDs)
-          .set({
-            dateOfIssue: new Date().toISOString(),
-            issuedBy: staffMember.id,
-          })
-          .where(eq(NationalIDs.applicationId, application.id));
-
-        await tx
-          .update(Applications)
-          .set({
-            isPrinted: true,
-            status: "COLLECTED",
-          })
-          .where(eq(Applications.id, application.id));
-      });
-
       const [data] = await db
         .select({
           nationalIdNumber: NationalIDs.nationalIdNumber,
@@ -844,6 +786,118 @@ class StationApplicationsServices {
 
     return {
       application: applicationData,
+    };
+  }
+
+  static async printApplication(payload: {
+    applicationId: string;
+    staffStation: string;
+    staffId: string;
+  }) {
+    const { applicationId, staffStation, staffId } = payload;
+
+    //Step 1: Check if the staffStation exist
+    const [station] = await db
+      .select()
+      .from(Stations)
+      .where(eq(Stations.id, staffStation))
+      .limit(1);
+    if (!station) {
+      throw new Error("Could not find staff");
+    }
+
+    //Step 2: Check if the staffMember exists in that station
+    const [staffMember] = await db
+      .select()
+      .from(StaffMembers)
+      .where(
+        and(
+          eq(StaffMembers.staffId, staffId),
+          eq(StaffMembers.station, staffStation),
+        ),
+      )
+      .limit(1);
+    if (!staffMember) {
+      throw new Error("Could not find staff member");
+    }
+
+    //Step 3: Check if the application exist and approved and not printed
+    const [application] = await db
+      .select()
+      .from(Applications)
+      .where(
+        and(
+          eq(Applications.id, applicationId),
+          eq(Applications.station, staffMember.station),
+          eq(Applications.status, "APPROVED"),
+          eq(Applications.isPrinted, false),
+        ),
+      )
+      .limit(1);
+
+    if (!application) {
+      throw new NotFoundError("Application not found");
+    }
+
+    //Step 4: Check the application type and fetch the documentData
+    if (application.type === "BIRTH") {
+      //Step 4a: Check if the documentData exists
+      const [documentData] = await db
+        .select({ id: BirthCertificates.id })
+        .from(BirthCertificates)
+        .where(eq(BirthCertificates.applicationId, application.id))
+        .limit(1);
+      if (!documentData) {
+        throw new Error("Could not find application details");
+      }
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(BirthCertificates)
+          .set({
+            placeOfIssue: staffMember.station,
+            dateOfIssue: new Date().toISOString(),
+          })
+          .where(eq(BirthCertificates.id, documentData.id));
+
+        await tx.update(Applications).set({
+          status: "PRINTED",
+          isPrinted: true,
+          updatedAt: new Date(),
+        });
+      });
+    } else if (application.type === "ID") {
+      const [documentData] = await db
+        .select({ id: NationalIDs.id })
+        .from(NationalIDs)
+        .where(eq(NationalIDs.applicationId, application.id))
+        .limit(1);
+      if (!documentData) {
+        throw new Error("Could not find application details");
+      }
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(NationalIDs)
+          .set({
+            issuedBy: staffMember.id,
+            dateOfIssue: new Date().toISOString(),
+          })
+          .where(eq(NationalIDs.id, documentData.id));
+
+        await tx
+          .update(Applications)
+          .set({
+            status: "PRINTED",
+            isPrinted: true,
+            updatedAt: new Date(),
+          })
+          .where(eq(Applications.id, application.id));
+      });
+    }
+
+    return {
+      application: application.id,
     };
   }
 }

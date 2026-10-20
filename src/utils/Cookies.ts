@@ -4,7 +4,8 @@ import { config } from "../config/envConfig";
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: config.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  sameSite:
+    config.NODE_ENV === "production" ? ("none" as const) : ("lax" as const),
 };
 
 class Cookies {

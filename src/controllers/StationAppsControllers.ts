@@ -253,7 +253,7 @@ class StationApplicationsControllers {
     }
   }
 
-  static async printApplication(
+  static async getPrintingApplication(
     req: RequestWithUser,
     res: Response,
     next: NextFunction,
@@ -261,7 +261,6 @@ class StationApplicationsControllers {
     try {
       const applicationId = UUIDSchema.safeParse(req.params);
       const stationId = req.user?.station;
-      const staffId = req.user?.staffId;
 
       if (!applicationId.success) {
         throw new BadRequestError("Invalid application ID");
@@ -271,15 +270,10 @@ class StationApplicationsControllers {
         throw new UnauthorizedError("Not authorized to perform this action");
       }
 
-      if (!staffId) {
-        throw new UnauthorizedError("Not authorized to perform this action");
-      }
-
       const { application } =
-        await StationApplicationsServices.printApplication({
+        await StationApplicationsServices.getPrintingApplication({
           staffStation: stationId,
           applicationId: applicationId.data.id,
-          staffId,
         });
 
       return res.status(StatusCodes.OK).json({
@@ -287,6 +281,43 @@ class StationApplicationsControllers {
         message: "Application printed successfully",
         application,
       });
+    } catch (error) {
+      logger.error(
+        `[ ${FLAG} ] - An error occurred while printing application: ${error}`,
+      );
+      next(error);
+    }
+  }
+
+  static async printApplication(
+    req: RequestWithUser,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const applicationId = UUIDSchema.safeParse(req.params);
+      const staffStation = req.user?.station;
+      const staffId = req.user?.staffId;
+
+      if (!applicationId.success) {
+        throw new BadRequestError("Invalid application ID");
+      }
+
+      if (!staffStation) {
+        throw new UnauthorizedError("Not authorized to perform this action");
+      }
+
+      if (!staffId) {
+        throw new UnauthorizedError("Not authorized to perform this action");
+      }
+
+      await StationApplicationsServices.printApplication({
+        staffId,
+        applicationId: applicationId.data.id,
+        staffStation,
+      });
+
+      return res.status(StatusCodes.NO_CONTENT).json();
     } catch (error) {
       logger.error(
         `[ ${FLAG} ] - An error occurred while printing application: ${error}`,
